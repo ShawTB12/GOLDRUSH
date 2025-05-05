@@ -34,6 +34,7 @@ import { ChatMessage } from "@/lib/openai"
 import { Sidebar } from "@/components/sidebar"
 import { BackgroundSelector } from "@/components/background-selector"
 import { useIsMobile } from "@/components/ui/use-mobile"
+import { StartupAnimation } from "@/components/startup-animation"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
@@ -99,6 +100,9 @@ export default function Home() {
   const [recognition, setRecognition] = useState<any | null>(null)
   const [showMarketAgents, setShowMarketAgents] = useState(false)
   const [marketQuery, setMarketQuery] = useState("")
+  // スタートアップアニメーションのステート
+  const [showStartupAnimation, setShowStartupAnimation] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   
   const isMobile = useIsMobile()
   
@@ -145,24 +149,41 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
-    setIsClient(true) // クライアントサイドでのレンダリングを検出
-    setIsLoaded(true)
-
-    // 3秒後にAIポップアップを表示
-    const popupTimer = setTimeout(() => {
-      setShowAIPopup(true)
-    }, 3000)
+    // 初期化処理
+    setIsClient(true); 
+    setIsLoaded(true);
     
-    // チャットがなければ新規チャットを作成
+    // ページロード時に常にログイン画面を表示するシンプルな実装
+    setShowStartupAnimation(true);
+    setIsLoggedIn(false);
+  }, []); // 空の依存配列
+
+  // スタートアップアニメーションが完了したらAIポップアップを表示
+  useEffect(() => {
+    if (!showStartupAnimation && isLoggedIn) {
+      const timer = setTimeout(() => {
+        setShowAIPopup(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showStartupAnimation, isLoggedIn]);
+  
+  // チャット初期化
+  useEffect(() => {
     if (chatHistory.length === 0) {
       const newChatId = addChat();
       setCurrentChatId(newChatId);
-    } else {
+    } else if (chatHistory[0]?.id) {
       setCurrentChatId(chatHistory[0].id);
     }
+  }, [chatHistory, addChat]);
 
-    return () => clearTimeout(popupTimer)
-  }, [])
+  // アニメーション完了時のハンドラー（シンプル化）
+  const handleAnimationComplete = () => {
+    setShowStartupAnimation(false);
+    setIsLoggedIn(true);
+  };
 
   // メッセージが更新されたらチャット履歴を更新
   useEffect(() => {
@@ -478,332 +499,340 @@ export default function Home() {
   }
 
   return (
-    <div className="relative flex min-h-screen bg-gray-900 text-white">
-      {/* モバイル用サイドバートグル */}
-      {isMobile && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowSidebar(true);
-          }}
-          className="absolute left-5 top-5 z-20 rounded-full bg-white/10 p-2.5 backdrop-blur-md transition hover:bg-white/20"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+    <>
+      {showStartupAnimation && (
+        <StartupAnimation onAnimationComplete={handleAnimationComplete} />
       )}
       
-      {/* ロゴのみのコラップス状態のサイドバー */}
-      {!isMobile && isSidebarCollapsed && (
-        <div 
-          className="fixed left-5 top-5 z-30 cursor-pointer transition-all duration-300 bg-black overflow-hidden rounded-full"
-          onClick={(e) => expandSidebar(e)}
-          style={{ padding: 0, lineHeight: 0, fontSize: 0 }}
-        >
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-700/70 backdrop-blur-md transition hover:bg-gray-600/70">
-            <SidebarIcon className="h-5 w-5 text-gray-200" />
-          </div>
-        </div>
-      )}
-      
-      {/* サイドバー本体 - 収縮時は完全に非表示（モバイル以外） */}
-      <div 
-        className={`${
-          isMobile 
-            ? `fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out ${
-                showSidebar ? 'translate-x-0' : '-translate-x-full'
-              }`
-            : `relative z-10 h-screen transition-all duration-300 ${
-                isSidebarCollapsed ? 'w-0 opacity-0 -translate-x-full' : 'w-[280px] opacity-100 translate-x-0'
-              }`
-        }`}
-      >
-        <Sidebar 
-          chatHistory={chatHistory}
-          onNewChat={handleNewChat}
-          onSelectChat={handleSelectChat}
-          onDeleteChat={deleteChat}
-          currentChatId={currentChatId}
-          isMobile={isMobile}
-          onClose={() => setShowSidebar(false)}
-          isCollapsed={false} // サイドバー自体は常に展開状態
-          onToggleCollapse={toggleSidebarCollapse}
-          background={{ ...background, path: defaultBackgroundPath }}
-          onShowSettings={handleShowSettings} // 設定メニューを表示する関数を渡す
-        />
-      </div>
-
-      {/* メインコンテンツ - サイドバーの状態に応じた幅調整 */}
-      <div 
-        className="relative flex-1 flex flex-col items-center justify-center overflow-hidden transition-all duration-300"
-        style={{ 
-          width: `calc(100% - ${!isMobile && !isSidebarCollapsed ? sidebarWidth : 0}px)`,
-          marginLeft: isMobile || isSidebarCollapsed ? 0 : 'auto',
-          paddingLeft: !isMobile && isSidebarCollapsed ? '60px' : '0'  // ロゴの余白
-        }}
-      >
-        {/* Background Image - 選択された背景を使用 */}
-        <Image
-          src={defaultBackgroundPath}
-          alt="Background"
-          fill
-          className="object-cover"
-          priority
-        />
-
-        {/* Background gradients - reduced opacity */}
-        <div
-          className="absolute -top-40 left-0 right-0 h-[500px] opacity-30"
-          style={{
-            background:
-              "linear-gradient(90deg, rgba(131, 58, 180, 0.5) 0%, rgba(253, 29, 29, 0.5) 50%, rgba(252, 176, 69, 0.5) 100%)",
-            filter: "blur(100px)",
-          }}
-        />
-
-        {/* Chat container - すりガラス効果を強化 */}
-        <div className="relative z-10 flex h-[calc(100vh-20px)] w-[98%] max-w-7xl flex-col overflow-hidden rounded-2xl bg-white/40 backdrop-blur-md m-2.5 border border-gray-200/20 shadow-lg">
-          {/* Chat header */}
-          <div className="flex items-center justify-between border-b border-gray-200/20 px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black overflow-hidden">
-                <Image
-                  src="/logo.jpg"
-                  alt="GOLD RUSH AGENT"
-                  width={40}
-                  height={40}
-                  className="block"
-                />
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-800">GOLD RUSH AGENT</h2>
-                <p className="text-xs text-gray-600">オンライン</p>
+      {isLoggedIn && !showStartupAnimation && (
+        <div className="flex h-screen w-full overflow-hidden bg-background">
+          {/* モバイル用サイドバートグル */}
+          {isMobile && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowSidebar(true);
+              }}
+              className="absolute left-5 top-5 z-20 rounded-full bg-white/10 p-2.5 backdrop-blur-md transition hover:bg-white/20"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+          
+          {/* ロゴのみのコラップス状態のサイドバー */}
+          {!isMobile && isSidebarCollapsed && (
+            <div 
+              className="fixed left-5 top-5 z-30 cursor-pointer transition-all duration-300 bg-black overflow-hidden rounded-full"
+              onClick={(e) => expandSidebar(e)}
+              style={{ padding: 0, lineHeight: 0, fontSize: 0 }}
+            >
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-700/70 backdrop-blur-md transition hover:bg-gray-600/70">
+                <SidebarIcon className="h-5 w-5 text-gray-200" />
               </div>
             </div>
+          )}
+          
+          {/* サイドバー本体 - 収縮時は完全に非表示（モバイル以外） */}
+          <div 
+            className={`${
+              isMobile 
+                ? `fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out ${
+                    showSidebar ? 'translate-x-0' : '-translate-x-full'
+                  }`
+                : `relative z-10 h-screen transition-all duration-300 ${
+                    isSidebarCollapsed ? 'w-0 opacity-0 -translate-x-full' : 'w-[280px] opacity-100 translate-x-0'
+                  }`
+            }`}
+          >
+            <Sidebar 
+              chatHistory={chatHistory}
+              onNewChat={handleNewChat}
+              onSelectChat={handleSelectChat}
+              onDeleteChat={deleteChat}
+              currentChatId={currentChatId}
+              isMobile={isMobile}
+              onClose={() => setShowSidebar(false)}
+              isCollapsed={false} // サイドバー自体は常に展開状態
+              onToggleCollapse={toggleSidebarCollapse}
+              background={{ ...background, path: defaultBackgroundPath }}
+              onShowSettings={handleShowSettings} // 設定メニューを表示する関数を渡す
+            />
           </div>
 
-          {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {showMarketAgents ? (
-              <MarketAgentsUI query={marketQuery} onBack={() => setShowMarketAgents(false)} />
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`mb-4 flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+          {/* メインコンテンツ - サイドバーの状態に応じた幅調整 */}
+          <div 
+            className="relative flex-1 flex flex-col items-center justify-center overflow-hidden transition-all duration-300"
+            style={{ 
+              width: `calc(100% - ${!isMobile && !isSidebarCollapsed ? sidebarWidth : 0}px)`,
+              marginLeft: isMobile || isSidebarCollapsed ? 0 : 'auto',
+              paddingLeft: !isMobile && isSidebarCollapsed ? '60px' : '0'  // ロゴの余白
+            }}
+          >
+            {/* Background Image - 選択された背景を使用 */}
+            <Image
+              src={defaultBackgroundPath}
+              alt="Background"
+              fill
+              className="object-cover"
+              priority
+            />
+
+            {/* Background gradients - reduced opacity */}
+            <div
+              className="absolute -top-40 left-0 right-0 h-[500px] opacity-30"
+              style={{
+                background:
+                  "linear-gradient(90deg, rgba(131, 58, 180, 0.5) 0%, rgba(253, 29, 29, 0.5) 50%, rgba(252, 176, 69, 0.5) 100%)",
+                filter: "blur(100px)",
+              }}
+            />
+
+            {/* Chat container - すりガラス効果を強化 */}
+            <div className="relative z-10 flex h-[calc(100vh-20px)] w-[98%] max-w-7xl flex-col overflow-hidden rounded-2xl bg-white/40 backdrop-blur-md m-2.5 border border-gray-200/20 shadow-lg">
+              {/* Chat header */}
+              <div className="flex items-center justify-between border-b border-gray-200/20 px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black overflow-hidden">
+                    <Image
+                      src="/logo.jpg"
+                      alt="GOLD RUSH AGENT"
+                      width={40}
+                      height={40}
+                      className="block"
+                    />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-gray-800">GOLD RUSH AGENT</h2>
+                    <p className="text-xs text-gray-600">オンライン</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat messages */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {showMarketAgents ? (
+                  <MarketAgentsUI query={marketQuery} onBack={() => setShowMarketAgents(false)} />
+                ) : (
+                  <>
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`mb-4 flex ${
+                          message.role === "user" ? "justify-end" : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                            message.role === "user"
+                              ? "bg-blue-500/80 text-white border border-blue-400/20 shadow-md"
+                              : "bg-gray-100/70 text-gray-800 border border-gray-300/20 shadow-md"
+                          }`}
+                        >
+                          <div className="mb-1">
+                            {message.content}
+                            
+                            {/* アップロードされたファイルがある場合、表示する */}
+                            {message.role === "user" && 
+                             message.content.startsWith("ファイルをアップロードしました:") && 
+                             uploadedFiles.find(f => f.type === 'file' && message.content.includes(f.name)) && (
+                              <div className="mt-2 flex items-center gap-2 p-2 rounded-md bg-blue-600/50 border border-white/10">
+                                <File className="h-5 w-5" />
+                                <span className="text-sm">{message.content.replace("ファイルをアップロードしました: ", "")}</span>
+                              </div>
+                            )}
+                            
+                            {/* アップロードされた画像がある場合、表示する */}
+                            {message.role === "user" && 
+                             message.content.startsWith("画像をアップロードしました:") && 
+                             uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name)) && (
+                              <div className="mt-2">
+                                <p className="text-sm mb-1">{message.content.replace("画像をアップロードしました: ", "")}</p>
+                                <div className="relative w-full h-[150px] rounded-md overflow-hidden">
+                                  <Image 
+                                    src={uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name))?.url || ""}
+                                    alt="Uploaded image"
+                                    fill
+                                    className="object-contain"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right text-xs text-gray-600">
+                            {formatTime(message.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {/* エラーメッセージのみ残す */}
+                    {error && (
+                      <div className="mb-4 flex justify-center">
+                        <div className="max-w-[70%] rounded-2xl bg-red-100/70 px-4 py-2 text-red-800 border border-red-300/20 shadow-md">
+                          <p>エラー: {error}</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Chat input - すりガラス効果を強化 */}
+              <div className="border-t border-gray-200/20 bg-white/40 p-4 backdrop-blur-md">
+                <div className="flex items-center rounded-full bg-gray-100/50 px-4 py-2 backdrop-blur-sm border border-gray-300/20 shadow-inner">
+                  <button 
+                    onClick={(e) => handleFileClick(e)}
+                    className="mr-2 text-gray-500 hover:text-gray-800"
                   >
-                    <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                        message.role === "user"
-                          ? "bg-blue-500/80 text-white border border-blue-400/20 shadow-md"
-                          : "bg-gray-100/70 text-gray-800 border border-gray-300/20 shadow-md"
+                    <Paperclip className="h-5 w-5" />
+                  </button>
+                  {/* 隠しファイル入力フィールド */}
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.txt,.zip,.rar,.xls,.xlsx,.ppt,.pptx"
+                  />
+                  <textarea
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="メッセージを入力..."
+                    className="mr-2 flex-1 resize-none bg-transparent outline-none placeholder:text-gray-500 text-gray-800"
+                    rows={1}
+                    disabled={isLoading || isRecording}
+                  />
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={(e) => handleImageClick(e)}
+                      className="text-gray-500 hover:text-gray-800"
+                      disabled={isRecording}
+                    >
+                      <ImageIcon className="h-5 w-5" />
+                    </button>
+                    {/* 隠し画像入力フィールド */}
+                    <input 
+                      type="file"
+                      ref={imageInputRef}
+                      onChange={handleImageChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
+                    <button 
+                      onClick={toggleRecording}
+                      className={`relative rounded-full p-2 transition-colors ${
+                        isRecording 
+                          ? "bg-red-500/80 text-white hover:bg-red-600/90 border border-red-400/20" 
+                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-200/40"
                       }`}
                     >
-                      <div className="mb-1">
-                        {message.content}
-                        
-                        {/* アップロードされたファイルがある場合、表示する */}
-                        {message.role === "user" && 
-                         message.content.startsWith("ファイルをアップロードしました:") && 
-                         uploadedFiles.find(f => f.type === 'file' && message.content.includes(f.name)) && (
-                          <div className="mt-2 flex items-center gap-2 p-2 rounded-md bg-blue-600/50 border border-white/10">
-                            <File className="h-5 w-5" />
-                            <span className="text-sm">{message.content.replace("ファイルをアップロードしました: ", "")}</span>
-                          </div>
-                        )}
-                        
-                        {/* アップロードされた画像がある場合、表示する */}
-                        {message.role === "user" && 
-                         message.content.startsWith("画像をアップロードしました:") && 
-                         uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name)) && (
-                          <div className="mt-2">
-                            <p className="text-sm mb-1">{message.content.replace("画像をアップロードしました: ", "")}</p>
-                            <div className="relative w-full h-[150px] rounded-md overflow-hidden">
-                              <Image 
-                                src={uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name))?.url || ""}
-                                alt="Uploaded image"
-                                fill
-                                className="object-contain"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right text-xs text-gray-600">
-                        {formatTime(message.timestamp)}
-                      </div>
-                    </div>
+                      <Mic className="h-5 w-5" />
+                      {isRecording && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }}
+                      className={`rounded-full ${
+                        isLoading 
+                          ? "bg-blue-500/50 cursor-not-allowed" 
+                          : "bg-blue-500/80 hover:bg-blue-600/90"
+                      } p-2 text-white border border-blue-400/20 shadow-md`}
+                      disabled={isLoading || isRecording}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
-                ))}
-                {/* エラーメッセージのみ残す */}
-                {error && (
-                  <div className="mb-4 flex justify-center">
-                    <div className="max-w-[70%] rounded-2xl bg-red-100/70 px-4 py-2 text-red-800 border border-red-300/20 shadow-md">
-                      <p>エラー: {error}</p>
+                </div>
+                {isRecording && (
+                  <div className="mt-2 text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-red-100/70 px-3 py-1 text-xs text-red-800 border border-red-300/20">
+                      <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                      <span>音声を認識中... マイクボタンをクリックして終了</span>
                     </div>
                   </div>
                 )}
-              </>
-            )}
-          </div>
-
-          {/* Chat input - すりガラス効果を強化 */}
-          <div className="border-t border-gray-200/20 bg-white/40 p-4 backdrop-blur-md">
-            <div className="flex items-center rounded-full bg-gray-100/50 px-4 py-2 backdrop-blur-sm border border-gray-300/20 shadow-inner">
-              <button 
-                onClick={(e) => handleFileClick(e)}
-                className="mr-2 text-gray-500 hover:text-gray-800"
-              >
-                <Paperclip className="h-5 w-5" />
-              </button>
-              {/* 隠しファイル入力フィールド */}
-              <input 
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.txt,.zip,.rar,.xls,.xlsx,.ppt,.pptx"
-              />
-              <textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="メッセージを入力..."
-                className="mr-2 flex-1 resize-none bg-transparent outline-none placeholder:text-gray-500 text-gray-800"
-                rows={1}
-                disabled={isLoading || isRecording}
-              />
-              <div className="flex gap-2">
-                <button 
-                  onClick={(e) => handleImageClick(e)}
-                  className="text-gray-500 hover:text-gray-800"
-                  disabled={isRecording}
-                >
-                  <ImageIcon className="h-5 w-5" />
-                </button>
-                {/* 隠し画像入力フィールド */}
-                <input 
-                  type="file"
-                  ref={imageInputRef}
-                  onChange={handleImageChange}
-                  className="hidden"
-                  accept="image/*"
-                />
-                <button 
-                  onClick={toggleRecording}
-                  className={`relative rounded-full p-2 transition-colors ${
-                    isRecording 
-                      ? "bg-red-500/80 text-white hover:bg-red-600/90 border border-red-400/20" 
-                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-200/40"
-                  }`}
-                >
-                  <Mic className="h-5 w-5" />
-                  {isRecording && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                  className={`rounded-full ${
-                    isLoading 
-                      ? "bg-blue-500/50 cursor-not-allowed" 
-                      : "bg-blue-500/80 hover:bg-blue-600/90"
-                  } p-2 text-white border border-blue-400/20 shadow-md`}
-                  disabled={isLoading || isRecording}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </button>
               </div>
             </div>
-            {isRecording && (
-              <div className="mt-2 text-center">
-                <div className="inline-flex items-center gap-2 rounded-full bg-red-100/70 px-3 py-1 text-xs text-red-800 border border-red-300/20">
-                  <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                  <span>音声を認識中... マイクボタンをクリックして終了</span>
+
+            {/* AI Assistant popup - すりガラス効果を強化 */}
+            {showAIPopup && (
+              <div className="react-draggable absolute bottom-28 right-8 z-20 w-[320px] rounded-xl bg-white/40 p-4 shadow-lg backdrop-blur-md border border-gray-200/20">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/70 border border-indigo-400/20">
+                      <Sparkles className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-800">GOLDRUSHエージェント</h3>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowAIPopup(false);
+                    }}
+                    className="rounded-full hover:bg-gray-200/50 text-gray-500"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
+                <div className="text-sm text-gray-800">{typedText}</div>
+                {typedText.length === "私たちで日本を変えるビジネスを共創しましょう！".length && (
+                  <div className="mt-2 flex justify-end gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowAIPopup(false);
+                      }} 
+                      className="rounded-md bg-gray-100/50 px-3 py-1 text-xs backdrop-blur-sm transition hover:bg-gray-200/60 text-gray-800 border border-gray-300/20"
+                    >
+                      いいえ
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleNewChat();
+                        setShowAIPopup(false);
+                      }} 
+                      className="rounded-md bg-blue-500/70 px-3 py-1 text-xs transition hover:bg-blue-600/80 text-white border border-blue-400/20"
+                    >
+                      はい
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
+          
+          {/* モバイル用オーバーレイ */}
+          {isMobile && showSidebar && (
+            <div 
+              className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowSidebar(false);
+              }}
+            />
+          )}
         </div>
-
-        {/* AI Assistant popup - すりガラス効果を強化 */}
-        {showAIPopup && (
-          <div className="react-draggable absolute bottom-28 right-8 z-20 w-[320px] rounded-xl bg-white/40 p-4 shadow-lg backdrop-blur-md border border-gray-200/20">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/70 border border-indigo-400/20">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-800">GOLDRUSHエージェント</h3>
-                </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowAIPopup(false);
-                }}
-                className="rounded-full hover:bg-gray-200/50 text-gray-500"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="text-sm text-gray-800">{typedText}</div>
-            {typedText.length === "私たちで日本を変えるビジネスを共創しましょう！".length && (
-              <div className="mt-2 flex justify-end gap-2">
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setShowAIPopup(false);
-                  }} 
-                  className="rounded-md bg-gray-100/50 px-3 py-1 text-xs backdrop-blur-sm transition hover:bg-gray-200/60 text-gray-800 border border-gray-300/20"
-                >
-                  いいえ
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleNewChat();
-                    setShowAIPopup(false);
-                  }} 
-                  className="rounded-md bg-blue-500/70 px-3 py-1 text-xs transition hover:bg-blue-600/80 text-white border border-blue-400/20"
-                >
-                  はい
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* モバイル用オーバーレイ */}
-      {isMobile && showSidebar && (
-        <div 
-          className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setShowSidebar(false);
-          }}
-        />
       )}
-    </div>
+    </>
   )
 }
 
