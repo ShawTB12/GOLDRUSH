@@ -78,7 +78,7 @@ export function Sidebar({
 
   return (
     <div
-      className="flex h-full w-full flex-col bg-white/40 backdrop-blur-md text-gray-800 overflow-hidden border-r border-gray-200/20 shadow-lg transition-all duration-300 ease-in-out"
+      className="flex h-full w-full flex-col bg-black/40 backdrop-blur-md text-gray-200 overflow-hidden border-r border-gray-800/20 shadow-lg transition-all duration-300 ease-in-out"
     >
       {/* Background Image */}
       <div className="absolute inset-0 -z-10">
@@ -101,7 +101,7 @@ export function Sidebar({
       </div>
 
       {/* Header with Logo (クリックでホームへ遷移) */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200/20">
+      <div className="flex items-center justify-between p-4 border-b border-gray-700/20">
         <div
           className="flex items-center gap-2 cursor-pointer"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push('/'); }}
@@ -117,7 +117,7 @@ export function Sidebar({
               priority
             />
           </div>
-          <h2 className="text-xl font-bold tracking-wide text-gray-800" style={{ letterSpacing: '0.05em' }}>GOLD RUSH</h2>
+          <h2 className="text-xl font-bold tracking-wide text-gray-200" style={{ letterSpacing: '0.05em' }}>GOLD RUSH</h2>
         </div>
         <div className="flex items-center ml-auto">
           {isMobile ? (
@@ -127,7 +127,7 @@ export function Sidebar({
                 e.stopPropagation();
                 onClose && onClose();
               }}
-              className="rounded-full p-1.5 bg-gray-100/50 hover:bg-gray-200/60 text-gray-700 border border-gray-300/20"
+              className="rounded-full p-1.5 bg-gray-800/50 hover:bg-gray-700/60 text-gray-300 border border-gray-700/20"
             >
               <X className="h-5 w-5" />
             </button>
@@ -138,7 +138,7 @@ export function Sidebar({
                 e.stopPropagation();
                 onToggleCollapse && onToggleCollapse();
               }}
-              className="rounded-full p-1.5 bg-gray-100/50 hover:bg-gray-200/60 text-gray-700 border border-gray-300/20"
+              className="rounded-full p-1.5 bg-gray-800/50 hover:bg-gray-700/60 text-gray-300 border border-gray-700/20"
               aria-label="サイドバーを閉じる"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -167,7 +167,7 @@ export function Sidebar({
       <div className="flex-1 overflow-y-auto p-2">
         {!isClient ? (
           // サーバーサイドレンダリング時は単純なローディング表示
-          <div className="flex h-full flex-col items-center justify-center text-center text-gray-500 p-4">
+          <div className="flex h-full flex-col items-center justify-center text-center text-gray-400 p-4">
             <MessageSquare className="mb-2 h-8 w-8" />
             <p>読み込み中...</p>
           </div>
@@ -179,21 +179,21 @@ export function Sidebar({
               onClick={() => onSelectChat(chat.id)}
               className={`mb-1 flex cursor-pointer items-center justify-between rounded-md p-3 text-sm ${
                 currentChatId === chat.id
-                  ? 'bg-gray-200/60 border border-gray-300/20 shadow-md'
-                  : 'hover:bg-gray-100/40 border border-transparent hover:border-gray-200/20'
+                  ? 'bg-gray-800/60 border border-gray-700/20 shadow-md'
+                  : 'hover:bg-gray-900/40 border border-transparent hover:border-gray-700/20'
               }`}
             >
               <div className="flex items-center gap-3 overflow-hidden">
-                <MessageSquare className="h-5 w-5 shrink-0 text-gray-500" />
+                <MessageSquare className="h-5 w-5 shrink-0 text-gray-400" />
                 <div className="overflow-hidden">
-                  <p className="truncate font-medium text-gray-800">{chat.title}</p>
-                  <p className="truncate text-xs text-gray-600">
+                  <p className="truncate font-medium text-gray-200">{chat.title}</p>
+                  <p className="truncate text-xs text-gray-400">
                     {chat.lastMessage || '新しい会話を開始します'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-400">
                   {formatDate(chat.timestamp)}
                 </span>
                 <button
@@ -201,7 +201,7 @@ export function Sidebar({
                     e.stopPropagation();
                     onDeleteChat(chat.id);
                   }}
-                  className="text-gray-500 hover:text-gray-800"
+                  className="text-gray-400 hover:text-gray-200"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -210,7 +210,7 @@ export function Sidebar({
           ))
         ) : (
           // クライアントサイドでチャット履歴がない場合
-          <div className="flex h-full flex-col items-center justify-center text-center text-gray-500 p-4">
+          <div className="flex h-full flex-col items-center justify-center text-center text-gray-400 p-4">
             <MessageSquare className="mb-2 h-8 w-8" />
             <p>チャット履歴がありません</p>
             <p className="text-sm">「新規チャット」をクリックして会話を始めましょう</p>
@@ -219,7 +219,7 @@ export function Sidebar({
       </div>
 
       {/* Footer */}
-      <div className="mt-auto border-t border-gray-200/20 p-4">
+      <div className="mt-auto border-t border-gray-700/20 p-4">
         <button 
           onClick={(e) => {
             e.preventDefault();
@@ -230,7 +230,7 @@ export function Sidebar({
               alert('設定メニューは開発中です');
             }
           }}
-          className="flex w-full items-center gap-2 rounded-md bg-gray-100/50 p-2 text-sm hover:bg-gray-200/60 text-gray-700 border border-gray-300/20 shadow-md"
+          className="flex w-full items-center gap-2 rounded-md bg-gray-800/50 p-2 text-sm hover:bg-gray-700/60 text-gray-300 border border-gray-700/20 shadow-md"
         >
           <Settings className="h-4 w-4" />
           <span>設定</span>

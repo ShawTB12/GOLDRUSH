@@ -38,6 +38,7 @@ import { StartupAnimation } from "@/components/startup-animation"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
+import StarrySphere from "./components/StarrySphere"
 
 // TypeScript定義 - Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -104,6 +105,12 @@ export default function Home() {
   const [showStartupAnimation, setShowStartupAnimation] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   
+  // アニメーション関連の状態
+  const [isAnalyzing, setIsAnalyzing] = useState(true) // アニメーションを表示する
+  
+  // アニメーションのCanvas参照
+  const animationFrameRef = useRef<number>(0)
+  
   const isMobile = useIsMobile()
   
   // チャット履歴の管理
@@ -123,12 +130,7 @@ export default function Home() {
   
   // 初期メッセージ
   const initialMessages: ChatMessage[] = [
-    {
-      id: 1,
-      role: 'assistant',
-      content: "私たちで日本を変えるビジネスを共創しましょう！",
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-    }
+    // 初期メッセージを削除
   ];
   
   // チャットフックを使用
@@ -161,11 +163,9 @@ export default function Home() {
   // スタートアップアニメーションが完了したらAIポップアップを表示
   useEffect(() => {
     if (!showStartupAnimation && isLoggedIn) {
-      const timer = setTimeout(() => {
-        setShowAIPopup(true);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
+      // AIポップアップを表示しないよう削除
+      console.log('Startup animation completed, showing sphere animation');
+      setIsAnalyzing(true); // 球体アニメーションを表示
     }
   }, [showStartupAnimation, isLoggedIn]);
   
@@ -183,6 +183,8 @@ export default function Home() {
   const handleAnimationComplete = () => {
     setShowStartupAnimation(false);
     setIsLoggedIn(true);
+    setIsAnalyzing(true); // 球体アニメーションを表示するよう明示的に設定
+    console.log('Animation complete, sphere should appear');
   };
 
   // メッセージが更新されたらチャット履歴を更新
@@ -208,19 +210,7 @@ export default function Home() {
 
   useEffect(() => {
     if (showAIPopup) {
-      const text =
-        "　私たちで日本を変えるビジネスを共創しましょう！"
-      let i = 0
-      const typingInterval = setInterval(() => {
-        if (i < text.length) {
-          setTypedText((prev) => prev + text.charAt(i))
-          i++
-        } else {
-          clearInterval(typingInterval)
-        }
-      }, 50)
-
-      return () => clearInterval(typingInterval)
+      // AIポップアップの内容処理を削除
     }
   }, [showAIPopup])
 
@@ -498,6 +488,23 @@ export default function Home() {
     }
   }
 
+  // 円形アニメーション用のuseEffect
+  useEffect(() => {
+    if (isAnalyzing) {
+      console.log('Animation initializing...'); // デバッグログ
+    }
+    
+    // クリーンアップ関数
+    return () => {
+      console.log('Cleaning up animation...');
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isAnalyzing]);
+
+  // Cristalボタンを削除
+  
   return (
     <>
       {showStartupAnimation && (
@@ -566,7 +573,8 @@ export default function Home() {
             style={{ 
               width: `calc(100% - ${!isMobile && !isSidebarCollapsed ? sidebarWidth : 0}px)`,
               marginLeft: isMobile || isSidebarCollapsed ? 0 : 'auto',
-              paddingLeft: !isMobile && isSidebarCollapsed ? '60px' : '0'  // ロゴの余白
+              paddingLeft: !isMobile && isSidebarCollapsed ? '60px' : '12px',  // 左側の余白を確保
+              paddingRight: '12px' // 右側の余白を確保
             }}
           >
             {/* Background Image - 選択された背景を使用 */}
@@ -589,9 +597,9 @@ export default function Home() {
             />
 
             {/* Chat container - すりガラス効果を強化 */}
-            <div className="relative z-10 flex h-[calc(100vh-20px)] w-[98%] max-w-7xl flex-col overflow-hidden rounded-2xl bg-white/40 backdrop-blur-md m-2.5 border border-gray-200/20 shadow-lg">
+            <div className="relative z-10 flex h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-2xl bg-black/40 backdrop-blur-md border border-gray-800/20 shadow-lg">
               {/* Chat header */}
-              <div className="flex items-center justify-between border-b border-gray-200/20 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-gray-700/20 px-6 py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black overflow-hidden">
                     <Image
@@ -603,86 +611,100 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <h2 className="font-semibold text-gray-800">GOLD RUSH AGENT</h2>
-                    <p className="text-xs text-gray-600">オンライン</p>
+                    <h2 className="font-semibold text-gray-200">GOLD RUSH AGENT</h2>
+                    <p className="text-xs text-gray-400">オンライン</p>
                   </div>
                 </div>
+                
+                {/* Cristalボタンを削除 */}
               </div>
 
               {/* Chat messages */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4 relative">
                 {showMarketAgents ? (
                   <MarketAgentsUI query={marketQuery} onBack={() => setShowMarketAgents(false)} />
                 ) : (
                   <>
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`mb-4 flex ${
-                          message.role === "user" ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                            message.role === "user"
-                              ? "bg-blue-500/80 text-white border border-blue-400/20 shadow-md"
-                              : "bg-gray-100/70 text-gray-800 border border-gray-300/20 shadow-md"
-                          }`}
-                        >
-                          <div className="mb-1">
-                            {message.content}
-                            
-                            {/* アップロードされたファイルがある場合、表示する */}
-                            {message.role === "user" && 
-                             message.content.startsWith("ファイルをアップロードしました:") && 
-                             uploadedFiles.find(f => f.type === 'file' && message.content.includes(f.name)) && (
-                              <div className="mt-2 flex items-center gap-2 p-2 rounded-md bg-blue-600/50 border border-white/10">
-                                <File className="h-5 w-5" />
-                                <span className="text-sm">{message.content.replace("ファイルをアップロードしました: ", "")}</span>
-                              </div>
-                            )}
-                            
-                            {/* アップロードされた画像がある場合、表示する */}
-                            {message.role === "user" && 
-                             message.content.startsWith("画像をアップロードしました:") && 
-                             uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name)) && (
-                              <div className="mt-2">
-                                <p className="text-sm mb-1">{message.content.replace("画像をアップロードしました: ", "")}</p>
-                                <div className="relative w-full h-[150px] rounded-md overflow-hidden">
-                                  <Image 
-                                    src={uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name))?.url || ""}
-                                    alt="Uploaded image"
-                                    fill
-                                    className="object-contain"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right text-xs text-gray-600">
-                            {formatTime(message.timestamp)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {/* エラーメッセージのみ残す */}
-                    {error && (
-                      <div className="mb-4 flex justify-center">
-                        <div className="max-w-[70%] rounded-2xl bg-red-100/70 px-4 py-2 text-red-800 border border-red-300/20 shadow-md">
-                          <p>エラー: {error}</p>
+                    {/* 星空の球体アニメーションを表示 */}
+                    {isAnalyzing && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                        <div className="w-4/5 h-4/5 max-w-[800px] max-h-[800px]">
+                          <StarrySphere />
                         </div>
                       </div>
                     )}
+                    
+                    {/* メッセージ表示部分を相対位置に変更して、アニメーションの上に表示 */}
+                    <div className="relative" style={{ zIndex: isAnalyzing ? 10 : 30 }}>
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`mb-4 flex ${
+                            message.role === "user" ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                              message.role === "user"
+                                ? "bg-blue-500/80 text-white border border-blue-400/20 shadow-md"
+                                : "bg-gray-100/70 text-gray-800 border border-gray-300/20 shadow-md"
+                            }`}
+                          >
+                            <div className="mb-1">
+                              {message.content}
+                              
+                              {/* アップロードされたファイルがある場合、表示する */}
+                              {message.role === "user" && 
+                              message.content.startsWith("ファイルをアップロードしました:") && 
+                              uploadedFiles.find(f => f.type === 'file' && message.content.includes(f.name)) && (
+                                <div className="mt-2 flex items-center gap-2 p-2 rounded-md bg-blue-600/50 border border-white/10">
+                                  <File className="h-5 w-5" />
+                                  <span className="text-sm">{message.content.replace("ファイルをアップロードしました: ", "")}</span>
+                                </div>
+                              )}
+                              
+                              {/* アップロードされた画像がある場合、表示する */}
+                              {message.role === "user" && 
+                              message.content.startsWith("画像をアップロードしました:") && 
+                              uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name)) && (
+                                <div className="mt-2">
+                                  <p className="text-sm mb-1">{message.content.replace("画像をアップロードしました: ", "")}</p>
+                                  <div className="relative w-full h-[150px] rounded-md overflow-hidden">
+                                    <Image 
+                                      src={uploadedFiles.find(f => f.type === 'image' && message.content.includes(f.name))?.url || ""}
+                                      alt="Uploaded image"
+                                      fill
+                                      className="object-contain"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right text-xs text-gray-600">
+                              {formatTime(message.timestamp)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {/* エラーメッセージのみ残す */}
+                      {error && (
+                        <div className="mb-4 flex justify-center">
+                          <div className="max-w-[70%] rounded-2xl bg-red-100/70 px-4 py-2 text-red-800 border border-red-300/20 shadow-md">
+                            <p>エラー: {error}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
 
               {/* Chat input - すりガラス効果を強化 */}
-              <div className="border-t border-gray-200/20 bg-white/40 p-4 backdrop-blur-md">
-                <div className="flex items-center rounded-full bg-gray-100/50 px-4 py-2 backdrop-blur-sm border border-gray-300/20 shadow-inner">
+              <div className="border-t border-gray-700/20 bg-black/40 p-4 backdrop-blur-md">
+                <div className="flex items-center rounded-full bg-gray-800/50 px-4 py-2 backdrop-blur-sm border border-gray-700/20 shadow-inner">
                   <button 
                     onClick={(e) => handleFileClick(e)}
-                    className="mr-2 text-gray-500 hover:text-gray-800"
+                    className="mr-2 text-gray-400 hover:text-gray-200"
                   >
                     <Paperclip className="h-5 w-5" />
                   </button>
@@ -699,7 +721,7 @@ export default function Home() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="メッセージを入力..."
-                    className="mr-2 flex-1 resize-none bg-transparent outline-none placeholder:text-gray-500 text-gray-800"
+                    className="mr-2 flex-1 resize-none bg-transparent outline-none placeholder:text-gray-500 text-gray-200"
                     rows={1}
                     disabled={isLoading || isRecording}
                   />
@@ -765,58 +787,6 @@ export default function Home() {
                 )}
               </div>
             </div>
-
-            {/* AI Assistant popup - すりガラス効果を強化 */}
-            {showAIPopup && (
-              <div className="react-draggable absolute bottom-28 right-8 z-20 w-[320px] rounded-xl bg-white/40 p-4 shadow-lg backdrop-blur-md border border-gray-200/20">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/70 border border-indigo-400/20">
-                      <Sparkles className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-800">GOLDRUSHエージェント</h3>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowAIPopup(false);
-                    }}
-                    className="rounded-full hover:bg-gray-200/50 text-gray-500"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                <div className="text-sm text-gray-800">{typedText}</div>
-                {typedText.length === "私たちで日本を変えるビジネスを共創しましょう！".length && (
-                  <div className="mt-2 flex justify-end gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowAIPopup(false);
-                      }} 
-                      className="rounded-md bg-gray-100/50 px-3 py-1 text-xs backdrop-blur-sm transition hover:bg-gray-200/60 text-gray-800 border border-gray-300/20"
-                    >
-                      いいえ
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleNewChat();
-                        setShowAIPopup(false);
-                      }} 
-                      className="rounded-md bg-blue-500/70 px-3 py-1 text-xs transition hover:bg-blue-600/80 text-white border border-blue-400/20"
-                    >
-                      はい
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           
           {/* モバイル用オーバーレイ */}
