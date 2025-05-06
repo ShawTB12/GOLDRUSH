@@ -1,6 +1,12 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
-const StarrySphere = () => {
+// Propsの型定義を追加
+interface StarrySphereProps {
+  isAudioActive?: boolean;
+  audioLevel?: number;
+}
+
+const StarrySphere = ({ isAudioActive = false, audioLevel = 0 }: StarrySphereProps) => {
   const sphereCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
 
@@ -101,10 +107,12 @@ const StarrySphere = () => {
         const centerY = Math.floor(canvas.height / 2);
         const targetRadius = Math.min(canvas.width, canvas.height) * 0.45;
         
-        // 円形の背景描画を削除（透明にするため）
+        // 音声レベルに基づくアニメーション効果をコントロール
+        const effectiveAudioLevel = isAudioActive ? Math.max(0.1, audioLevel) : 0;
+        const audioFactor = isAudioActive ? 1 + effectiveAudioLevel * 1.5 : 1; // 最大で2.5倍まで
         
         // Draw "GOLD RUSH" text
-        const fontSize = Math.min(canvas.width, canvas.height) * 0.08;
+        const fontSize = Math.min(canvas.width, canvas.height) * 0.08 * (isAudioActive ? audioFactor * 0.8 : 1);
         ctx.font = `bold ${fontSize}px 'Arial', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -116,27 +124,31 @@ const StarrySphere = () => {
           centerX + fontSize * 2, 
           centerY
         );
-        textGradient.addColorStop(0, 'rgba(255, 215, 0, 0.7)');
-        textGradient.addColorStop(0.5, 'rgba(255, 235, 100, 0.9)');
-        textGradient.addColorStop(1, 'rgba(255, 215, 0, 0.7)');
         
-        // Add glow effect
+        // 音声レベルに応じてグラデーションの色を調整
+        const textAlpha = isAudioActive ? 0.7 + effectiveAudioLevel * 0.3 : 0.7;
+        const highlightAlpha = isAudioActive ? 0.9 + effectiveAudioLevel * 0.1 : 0.9;
+        
+        textGradient.addColorStop(0, `rgba(255, 215, 0, ${textAlpha})`);
+        textGradient.addColorStop(0.5, `rgba(255, 235, 100, ${highlightAlpha})`);
+        textGradient.addColorStop(1, `rgba(255, 215, 0, ${textAlpha})`);
+        
+        // Add glow effect - 音声レベルに応じてグロー効果を強調
+        const glowStrength = isAudioActive ? fontSize * (0.3 + effectiveAudioLevel * 0.5) : fontSize * 0.3;
         ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
-        ctx.shadowBlur = fontSize * 0.3;
+        ctx.shadowBlur = glowStrength;
         ctx.fillStyle = textGradient;
         
-        // Make text pulse slightly with time
-        const pulseFactor = Math.sin(time * 0.5) * 0.05 + 1;
-        ctx.save();
-        ctx.scale(pulseFactor, pulseFactor);
-        ctx.fillText('GOLD RUSH', centerX / pulseFactor, centerY / pulseFactor);
-        ctx.restore();
+        // テキストをそのまま描画（脈動効果を削除）
+        ctx.fillText('GOLD RUSH', centerX, centerY);
         
         // Remove shadow for other elements
         ctx.shadowBlur = 0;
         
         // Update rotation angle and time
-        angle += 0.006; // Slower rotation
+        // 音声アクティブ時は回転速度が音声レベルに対応して変化
+        const rotationSpeed = isAudioActive ? 0.006 + effectiveAudioLevel * 0.02 : 0.006;
+        angle += rotationSpeed;
         time += 0.016; // Approx 60fps
         
         // Draw dots
@@ -161,13 +173,18 @@ const StarrySphere = () => {
           const exactY = Math.round(centerY + dot.y);
 
           // Only draw dots within screen (to maintain perfect circle)
+          // 音声モードの場合、球体サイズを音声レベルに応じて変化させる
+          const sphereScaleFactor = isAudioActive ? 1 + effectiveAudioLevel * 0.3 : 1;
+          const scaledRadius = targetRadius * sphereScaleFactor;
           const distance = Math.sqrt(Math.pow(exactX - centerX, 2) + Math.pow(exactY - centerY, 2));
-          if (distance <= targetRadius) {
+
+          if (distance <= scaledRadius) {
             const grd = ctx.createRadialGradient(
               exactX, exactY, 0,
               exactX, exactY, size * 2
             );
             
+            // Set gradient color stops - 音声モードでは色の強度を上げる
             // Set gradient color stops
             const baseColor = dot.color.replace(/[^,]+(?=\))/, alpha.toString());
             grd.addColorStop(0, baseColor);
@@ -220,30 +237,6 @@ const StarrySphere = () => {
           }
         }
         
-        // Add glowing boundary to sphere edge
-        // (枠を削除したため、この部分はコメントアウトまたは削除)
-        /* 
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, targetRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // Add another glow to edge
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, targetRadius - 2, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 215, 0, 0.2)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        
-        // Add outer glow
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, targetRadius + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 215, 0, 0.1)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        */
-        
         // Add gradient from edge to center
         const outerGlow = ctx.createRadialGradient(
           centerX, centerY, targetRadius * 0.7,
@@ -259,7 +252,7 @@ const StarrySphere = () => {
         ctx.fillStyle = outerGlow;
         ctx.fill();
         
-        // Request next frame
+        // Continue animation loop
         animationFrameRef.current = requestAnimationFrame(animate);
       };
       
@@ -274,16 +267,14 @@ const StarrySphere = () => {
         }
       };
     }
-  }, []);
+  }, [isAudioActive, audioLevel]); // 依存配列を簡素化
 
   return (
-    <div className="flex items-center justify-center w-full h-full">
-      <div className="relative w-full h-full rounded-lg overflow-hidden">
-        <canvas 
-          ref={sphereCanvasRef} 
-          className="w-full h-full"
-        />
-      </div>
+    <div className="w-full h-full relative flex items-center justify-center">
+      <canvas 
+        ref={sphereCanvasRef} 
+        className="w-full h-full"
+      />
     </div>
   );
 };

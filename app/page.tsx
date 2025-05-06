@@ -39,6 +39,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 import StarrySphere from "./components/StarrySphere"
+import { useAudioReactiveAnimation } from "@/hooks/use-audio-reactive-animation"
 
 // TypeScript定義 - Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -83,6 +84,7 @@ declare global {
   interface Window {
     SpeechRecognition: any;
     webkitSpeechRecognition: any;
+    playTestSound?: () => void;
   }
 }
 
@@ -107,6 +109,14 @@ export default function Home() {
   
   // アニメーション関連の状態
   const [isAnalyzing, setIsAnalyzing] = useState(true) // アニメーションを表示する
+  
+  // 音声反応アニメーションのフック
+  const { 
+    isPlaying: isAudioAnimationPlaying, 
+    audioLevel, 
+    startAnimation, 
+    stopAnimation 
+  } = useAudioReactiveAnimation('/sounds/goldrush-startup-backup.mp3', 5000);
   
   // アニメーションのCanvas参照
   const animationFrameRef = useRef<number>(0)
@@ -491,12 +501,11 @@ export default function Home() {
   // 円形アニメーション用のuseEffect
   useEffect(() => {
     if (isAnalyzing) {
-      console.log('Animation initializing...'); // デバッグログ
+      // デバッグログを削除
     }
     
     // クリーンアップ関数
     return () => {
-      console.log('Cleaning up animation...');
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -505,6 +514,23 @@ export default function Home() {
 
   // Cristalボタンを削除
   
+  // サイドバーからのGOLDRUSH起動通知を処理する関数
+  const handleGoldRushStart = useCallback(async () => {
+    try {
+      // 新しいチャットを作成
+      const newChatId = addChat();
+      setCurrentChatId(newChatId);
+      
+      // 音声アニメーションを開始
+      await startAnimation();
+    } catch (error) {
+      console.error('GOLDRUSHの起動中にエラーが発生しました:', error);
+      // エラーが発生しても、新しいチャットは作成する
+      const newChatId = addChat();
+      setCurrentChatId(newChatId);
+    }
+  }, [addChat, startAnimation]);
+
   return (
     <>
       {showStartupAnimation && (
@@ -554,7 +580,7 @@ export default function Home() {
           >
             <Sidebar 
               chatHistory={chatHistory}
-              onNewChat={handleNewChat}
+              onNewChat={handleGoldRushStart} // 通常のonNewChatの代わりにhandleGoldRushStartを使用
               onSelectChat={handleSelectChat}
               onDeleteChat={deleteChat}
               currentChatId={currentChatId}
@@ -627,9 +653,14 @@ export default function Home() {
                   <>
                     {/* 星空の球体アニメーションを表示 */}
                     {isAnalyzing && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                        <div className="w-4/5 h-4/5 max-w-[800px] max-h-[800px]">
-                          <StarrySphere />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
+                        <div className="w-4/5 h-4/5 max-w-[800px] max-h-[800px] relative">
+                          <StarrySphere 
+                            isAudioActive={isAudioAnimationPlaying} 
+                            audioLevel={audioLevel} 
+                          />
+                          
+                          {/* デバッグ用音声テストボタンを削除 */}
                         </div>
                       </div>
                     )}

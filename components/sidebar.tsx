@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { 
   Plus, 
@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 
 type SidebarProps = {
   chatHistory: ChatHistory[];
-  onNewChat: () => void;
+  onNewChat: () => Promise<void>;
   onSelectChat: (id: string) => void;
   onDeleteChat: (id: string) => void;
   currentChatId?: string;
@@ -44,20 +44,61 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+  const startupAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // クライアントサイドでのみレンダリングを行うために使用
   useEffect(() => {
     setIsClient(true);
+    
+    if (typeof window !== 'undefined') {
+      startupAudioRef.current = new Audio('/sounds/goldrush-startup.mp3');
+    }
+    
+    return () => {
+      if (startupAudioRef.current) {
+        startupAudioRef.current.pause();
+        startupAudioRef.current = null;
+      }
+    };
   }, []);
 
-  // チャット履歴を検索
+  const handleStartupClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      // 直接音声を再生する
+      const audio = new Audio('/sounds/goldrush-startup-backup.mp3');
+      audio.volume = 1.0;
+      
+      // 音声を再生
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('音声再生成功');
+          })
+          .catch(err => {
+            console.error('音声再生エラー:', err);
+            // 自動再生ポリシーの制限がある場合は、ユーザーインタラクションをシミュレート
+            document.body.click();
+            audio.play().catch(e => console.error('2回目の再生試行も失敗:', e));
+          });
+      }
+      
+      // 親コンポーネントの処理も実行
+      await onNewChat();
+    } catch (err) {
+      console.error('チャット作成エラー:', err);
+    }
+  };
+
   const filteredChats = chatHistory.filter(
     (chat) => 
       chat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // 日付をフォーマット
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -73,14 +114,12 @@ export function Sidebar({
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
-  // デフォルトの背景パス（SSRでもクライアントでも同じ値を使用）
   const defaultBackgroundPath = background?.path || '/backgrounds/GOLDRUSH.jpg';
 
   return (
     <div
       className="flex h-full w-full flex-col bg-black/40 backdrop-blur-md text-gray-200 overflow-hidden border-r border-gray-800/20 shadow-lg transition-all duration-300 ease-in-out"
     >
-      {/* Background Image */}
       <div className="absolute inset-0 -z-10">
         <Image
           src={defaultBackgroundPath}
@@ -89,7 +128,6 @@ export function Sidebar({
           className="object-cover opacity-30"
           priority
         />
-        {/* Background gradient overlay */}
         <div
           className="absolute inset-0 opacity-30"
           style={{
@@ -100,7 +138,6 @@ export function Sidebar({
         />
       </div>
 
-      {/* Header with Logo (クリックでホームへ遷移) */}
       <div className="flex items-center justify-between p-4 border-b border-gray-700/20">
         <div
           className="flex items-center gap-2 cursor-pointer"
@@ -147,32 +184,30 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* コンテンツコンテナ - 検索と新規チャットの幅を統一 */}
       <div className="px-4 py-4">
-        {/* New Chat Button */}
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onNewChat();
+          onClick={handleStartupClick}
+          className="w-full flex items-center justify-center gap-2 rounded-lg p-3 text-sm font-medium transition-colors mb-3 shadow-lg border-0"
+          style={{
+            background: "linear-gradient(135deg, #000 0%, #AA8C3F 45%, #D4AF37 55%, #000 100%)",
+            color: "#FFF",
+            fontWeight: "bold",
+            textShadow: "0px 1px 2px rgba(0,0,0,0.7)",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.4)"
           }}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-500/80 p-3 text-sm font-medium text-white transition-colors hover:bg-blue-600/90 mb-3 border border-blue-400/20 shadow-md"
         >
           <Plus className="h-4 w-4" />
-          <span>新規チャット</span>
+          <span>GOLDRUSHを起動する</span>
         </button>
       </div>
 
-      {/* Chat History - クライアントサイドでレンダリングする部分 */}
       <div className="flex-1 overflow-y-auto p-2">
         {!isClient ? (
-          // サーバーサイドレンダリング時は単純なローディング表示
           <div className="flex h-full flex-col items-center justify-center text-center text-gray-400 p-4">
             <MessageSquare className="mb-2 h-8 w-8" />
             <p>読み込み中...</p>
           </div>
         ) : filteredChats.length > 0 ? (
-          // クライアントサイドでチャット履歴がある場合
           filteredChats.map((chat) => (
             <div
               key={chat.id}
@@ -209,7 +244,6 @@ export function Sidebar({
             </div>
           ))
         ) : (
-          // クライアントサイドでチャット履歴がない場合
           <div className="flex h-full flex-col items-center justify-center text-center text-gray-400 p-4">
             <MessageSquare className="mb-2 h-8 w-8" />
             <p>チャット履歴がありません</p>
@@ -218,7 +252,6 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Footer */}
       <div className="mt-auto border-t border-gray-700/20 p-4">
         <button 
           onClick={(e) => {
