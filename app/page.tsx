@@ -25,7 +25,11 @@ import {
   AlignLeft,
   File,
   BarChart3,
-  CheckCircle2
+  CheckCircle2,
+  LineChart,
+  Lightbulb as LightIcon,
+  Rocket,
+  Star
 } from "lucide-react"
 import { useChat } from "@/hooks/use-chat"
 import { useChatHistory } from "@/hooks/use-chat-history"
@@ -103,6 +107,8 @@ export default function Home() {
   const [recognition, setRecognition] = useState<any | null>(null)
   const [showMarketAgents, setShowMarketAgents] = useState(false)
   const [marketQuery, setMarketQuery] = useState("")
+  // 新規事業計画モードの状態
+  const [showBusinessPlan, setShowBusinessPlan] = useState(false)
   // スタートアップアニメーションのステート
   const [showStartupAnimation, setShowStartupAnimation] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -270,13 +276,13 @@ export default function Home() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
     
-    // メッセージを送信
+    // 常に新規事業計画画面に遷移
     await sendMessage(inputMessage);
     setInputMessage("");
-    setMarketQuery(inputMessage);
-    setShowMarketAgents(true);
-
-    // 0.5秒後に音声を再生
+    setShowBusinessPlan(true);
+    setShowMarketAgents(false);
+    
+    // 音声再生（いずれ削除）
     setTimeout(() => {
       playStartSound();
     }, 500);
@@ -652,13 +658,21 @@ export default function Home() {
                     <p className="text-xs text-gray-400">オンライン</p>
                   </div>
                 </div>
-                
-                {/* Cristalボタンを削除 */}
               </div>
 
               {/* Chat messages */}
               <div className="flex-1 overflow-y-auto p-4 relative">
-                {showMarketAgents ? (
+                {showBusinessPlan ? (
+                  <BusinessVenturePlan 
+                    onStart={() => {
+                      setShowBusinessPlan(false);
+                      setShowMarketAgents(true);
+                    }}
+                    onCancel={() => {
+                      setShowBusinessPlan(false);
+                    }}
+                  />
+                ) : showMarketAgents ? (
                   <MarketAgentsUI query={marketQuery} onBack={() => setShowMarketAgents(false)} />
                 ) : (
                   <>
@@ -846,6 +860,187 @@ export default function Home() {
       )}
     </>
   )
+}
+
+// 新規事業創出計画コンポーネント
+function BusinessVenturePlan({ onStart, onCancel }: { onStart: () => void, onCancel: () => void }) {
+  // フェーズの定義
+  const phases = [
+    {
+      id: 1,
+      title: "市場分析",
+      icon: <LineChart className="h-6 w-6" style={{ color: "#8B5CF6" }} />,
+      items: [
+        "競合分析エージェント: エルピクセル、メドメイン、Preferred Networksなどの分析",
+        "トレンド分析エージェント: 市場規模、成長率の包括的分析",
+        "法規制エージェント: 医療×生成AI分野の規制動向分析",
+        "R&Dエージェント: 最新研究動向と技術進展の追跡"
+      ]
+    },
+    {
+      id: 2,
+      title: "特許選択",
+      icon: <LightIcon className="h-6 w-6" style={{ color: "#EC4899" }} />,
+      items: [
+        "市場ニーズに対応する最適特許の選定",
+        "競合特許との差別化ポイント分析",
+        "特許活用の最適アプローチ策定",
+        "知財戦略と事業展開計画の連携"
+      ]
+    },
+    {
+      id: 3,
+      title: "人材選抜",
+      icon: <Users className="h-6 w-6" style={{ color: "#6366F1" }} />,
+      items: [
+        "事業リーダーとコアメンバーの選定",
+        "必要スキルセットと組織構成の最適化",
+        "内部人材と外部アドバイザーの組み合わせ",
+        "人材育成と知識移転計画"
+      ]
+    },
+    {
+      id: 4,
+      title: "実装フェーズ",
+      icon: <Rocket className="h-6 w-6" style={{ color: "#F59E0B" }} />,
+      items: [
+        "詳細な事業計画と収益モデルの策定",
+        "初期投資とリソース配分計画",
+        "開発タイムラインとマイルストーン設定",
+        "マーケット参入戦略と成長計画"
+      ]
+    }
+  ];
+
+  // アニメーション用の状態
+  const [activePhase, setActivePhase] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
+  
+  // アニメーション効果
+  useEffect(() => {
+    // 初期表示時のアニメーション
+    const timer = setTimeout(() => {
+      setIsAnimating(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // フェーズインジケーターのスタイル
+  const phaseIndicatorStyle = (phaseId: number) => {
+    return {
+      current: "w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 shadow-lg shadow-purple-500/30 pulse",
+      other: "w-3 h-3 rounded-full border-2 border-gray-400/30 bg-transparent"
+    };
+  };
+
+  return (
+    <div className="animate-fadein-scale max-w-4xl mx-auto w-full">
+      <style jsx>{`
+        @keyframes pulse-ring {
+          0% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+          70% { box-shadow: 0 0 0 6px rgba(236, 72, 153, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+        }
+        .pulse {
+          animation: pulse-ring 2s ease-out infinite;
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .fade-in-up {
+          animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+      `}</style>
+      
+      {/* ヘッダー部分 - 高級感あるデザイン */}
+      <div className="text-center mb-8 fade-in-up">
+        <div className="inline-block p-1 bg-gradient-to-r from-blue-500 via-pink-500 to-purple-500 rounded-full mb-3">
+          <div className="bg-black/80 backdrop-blur-md rounded-full p-2">
+            <Star className="h-8 w-8 text-white" />
+          </div>
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+          新規事業創出計画
+        </h2>
+        <p className="text-gray-300 mt-2 max-w-2xl mx-auto">
+          AIによる最先端の市場分析に基づき、4フェーズのプロセスで革新的な新規事業を創出します
+        </p>
+        <div className="mt-4 h-px w-32 bg-gradient-to-r from-transparent via-pink-500/50 to-transparent mx-auto"></div>
+      </div>
+
+      {/* フェーズコンテナ */}
+      <div className="space-y-6">
+        {phases.map((phase, index) => (
+          <div 
+            key={phase.id} 
+            className={`rounded-xl overflow-hidden backdrop-blur-md shadow-lg border border-gray-700/20 opacity-0 ${isAnimating ? 'fade-in-up' : ''}`}
+            style={{ animationDelay: `${index * 200}ms` }}
+          >
+            {/* フェーズヘッダー - エレガントなデザイン */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-black/60 to-gray-800/40 px-5 py-4 border-b border-gray-700/20">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-full bg-black/50 backdrop-blur-md border border-gray-700/30 shadow-lg">
+                  {phase.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-white tracking-wide">
+                  Phase {phase.id}: {phase.title}
+                </h3>
+              </div>
+              <div className={phaseIndicatorStyle(phase.id)[phase.id === activePhase ? 'current' : 'other']}></div>
+            </div>
+            
+            {/* フェーズコンテンツ - 洗練されたデザイン */}
+            <div className="bg-gradient-to-b from-white/5 to-white/10 backdrop-blur-sm p-5 border-t border-gray-700/10">
+              <ul className="space-y-3">
+                {phase.items.map((item, idx) => (
+                  <li 
+                    key={idx} 
+                    className={`flex items-start space-x-2 text-gray-300 transition-all opacity-0 ${isAnimating ? 'fade-in-up' : ''}`}
+                    style={{ animationDelay: `${(index * 200) + ((idx + 1) * 100)}ms` }}
+                  >
+                    <span className="text-pink-400 mt-1 text-lg">•</span>
+                    <span className="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* アクションボタン - 洗練されたデザイン */}
+      <div className={`mt-10 flex justify-center space-x-5 opacity-0 ${isAnimating ? 'fade-in-up' : ''}`} style={{ animationDelay: '800ms' }}>
+        <button
+          onClick={onStart}
+          className="px-8 py-3 rounded-full bg-gradient-to-r from-blue-500 via-pink-500 to-purple-500 text-white font-bold shadow-xl hover:scale-105 transition duration-200 border border-white/10 relative overflow-hidden group"
+        >
+          <span className="relative z-10">計画を実行する</span>
+          <span className="absolute inset-0 bg-gradient-to-r from-blue-600 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-8 py-3 rounded-full bg-gray-800/70 text-gray-300 font-bold shadow-lg hover:bg-gray-700/70 transition duration-200 border border-gray-700/30"
+        >
+          キャンセル
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function MarketAgentsUI({ query, onBack }: { query: string, onBack: () => void }) {
