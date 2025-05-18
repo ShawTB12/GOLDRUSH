@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Image from "next/image"
 import {
   ChevronLeft,
@@ -41,7 +41,6 @@ import { useIsMobile } from "@/components/ui/use-mobile"
 import { StartupAnimation } from "@/components/startup-animation"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useCallback } from "react"
 import StarrySphere from "./components/StarrySphere"
 import { useAudioReactiveAnimation } from "@/hooks/use-audio-reactive-animation"
 
@@ -92,6 +91,41 @@ declare global {
   }
 }
 
+// グローバルな音声再生関数
+function playSoundFile(soundPath: string) {
+  try {
+    // オーディオ要素を作成
+    const audio = new Audio(soundPath);
+    
+    // 音声の読み込みと再生
+    audio.load();
+    
+    // ユーザージェスチャーとして認識されるようにする
+    const playPromise = audio.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log(`音声再生開始: ${soundPath}`);
+        })
+        .catch((error) => {
+          console.error(`音声再生エラー: ${soundPath}`, error);
+          
+          // エラーが発生した場合でも再度試行（自動再生ポリシーへの対応）
+          document.addEventListener('click', function playOnce() {
+            audio.play().catch(e => console.error('再試行でも再生失敗:', e));
+            document.removeEventListener('click', playOnce);
+          }, { once: true });
+        });
+    }
+    
+    return audio;
+  } catch (error) {
+    console.error('音声ファイルの再生に失敗しました:', error);
+    return null;
+  }
+}
+
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [showAIPopup, setShowAIPopup] = useState(false)
@@ -119,12 +153,98 @@ export default function Home() {
   // ローディングアニメーション状態
   const [showBusinessLoading, setShowBusinessLoading] = useState(false)
   
-  // 音声再生用の関数
-  const playStartSound = useCallback(() => {
-    const audio = new Audio('/sounds/GOLDRUSH_START.mp3');
-    audio.play().catch(error => {
-      console.error('音声の再生に失敗しました:', error);
+  // 音声再生用のrefs
+  const planningAudioRef = useRef<HTMLAudioElement | null>(null);
+  const executionAudioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // 音声プリロード処理
+  useEffect(() => {
+    // プランニング音声のプリロード
+    const planningAudio = new Audio('/sounds/GoldRush_Planning.mp3');
+    planningAudio.load();
+    planningAudio.volume = 1.0;
+    planningAudioRef.current = planningAudio;
+    
+    // エグゼキューション音声のプリロード
+    const executionAudio = new Audio('/sounds/GOLDRUSH_Execution.mp3');
+    executionAudio.load();
+    executionAudio.volume = 1.0;
+    executionAudioRef.current = executionAudio;
+    
+    // 音声の読み込み状況をコンソールに表示
+    planningAudio.addEventListener('canplaythrough', () => {
+      console.log('Planning音声の読み込みが完了しました');
     });
+    
+    executionAudio.addEventListener('canplaythrough', () => {
+      console.log('Execution音声の読み込みが完了しました');
+    });
+    
+    // クリーンアップ
+    return () => {
+      if (planningAudioRef.current) {
+        planningAudioRef.current.pause();
+      }
+      if (executionAudioRef.current) {
+        executionAudioRef.current.pause();
+      }
+    };
+  }, []);
+  
+  // 音声再生用の関数（Home内）
+  const playStartSound = useCallback(() => {
+    try {
+      if (!planningAudioRef.current) {
+        console.warn('音声オブジェクトが初期化されていません');
+        return;
+      }
+      
+      const audio = planningAudioRef.current;
+      audio.currentTime = 0;
+      audio.volume = 1.0;
+      
+      // 最初にクリックイベントにバインド（自動再生制限対策）
+      const clickHandler = () => {
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('音声の再生が開始されました');
+            })
+            .catch(error => {
+              console.error('音声の再生に失敗しました:', error);
+              // エラーの詳細をログ
+              if (error.name) {
+                console.error(`エラータイプ: ${error.name}`);
+              }
+              if (error.message) {
+                console.error(`エラーメッセージ: ${error.message}`);
+              }
+            });
+        }
+        
+        // イベントリスナーを一度だけ使用して削除
+        document.removeEventListener('click', clickHandler);
+      };
+      
+      // すぐに再生を試みる
+      const immediatePlayPromise = audio.play();
+      
+      if (immediatePlayPromise !== undefined) {
+        immediatePlayPromise
+          .then(() => {
+            console.log('音声の再生が即時に開始されました');
+          })
+          .catch(error => {
+            console.error('即時再生に失敗しました（クリックでの再生を試みます）:', error);
+            // クリックイベントでの再生をセットアップ
+            document.addEventListener('click', clickHandler, { once: true });
+          });
+      }
+    } catch (error) {
+      console.error('音声再生時に例外が発生しました:', error);
+    }
   }, []);
   
   // 音声反応アニメーションのフック
@@ -279,15 +399,15 @@ export default function Home() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
     
-    // まずローディングアニメーションを表示
+    // まず音声再生
+    playStartSound();
+    
+    // メッセージ送信とローディングアニメーション表示
     await sendMessage(inputMessage);
     setInputMessage("");
     setShowBusinessLoading(true);
     setShowMarketAgents(false);
     setShowBusinessPlan(false);
-    
-    // 音声再生
-    playStartSound();
     
     // 5秒後に新規事業創出計画画面を表示
     setTimeout(() => {
@@ -681,6 +801,7 @@ export default function Home() {
                     onCancel={() => {
                       setShowBusinessPlan(false);
                     }}
+                    executionAudioRef={executionAudioRef}
                   />
                 ) : showMarketAgents ? (
                   <MarketAgentsUI query={marketQuery} onBack={() => setShowMarketAgents(false)} />
@@ -874,65 +995,451 @@ export default function Home() {
 
 // 超ハイセンスなローディングアニメーションコンポーネント
 function BusinessLoadingAnimation() {
+  const sphereCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const agentBackgroundRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // 進行状況を示すステート
+  const [progressText, setProgressText] = useState("データ分析中...");
+  const [progressStage, setProgressStage] = useState(0);
+  
+  // 進行状況のテキスト配列
+  const progressTexts = [
+    "ビジネス開発データ分析中...",
+    "市場分析レポート生成中...",
+    "特許情報検索中...",
+    "人材マッチング中..."
+  ];
+  
+  // エージェント名の配列
+  const agentNames = [
+    "HR Agent", 
+    "Business Development Agent", 
+    "Market Research Agent", 
+    "Patent Agent", 
+    "Data Analysis Agent", 
+    "Financial Agent", 
+    "Legal Agent", 
+    "Strategy Agent",
+    "Innovation Agent",
+    "Talent Agent",
+    "Competitor Agent",
+    "Product Agent"
+  ];
+  
+  useEffect(() => {
+    // 進行状況テキストを一定間隔で更新
+    const intervalId = setInterval(() => {
+      setProgressStage(prev => (prev + 1) % progressTexts.length);
+    }, 1200);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  useEffect(() => {
+    setProgressText(progressTexts[progressStage]);
+  }, [progressStage]);
+
+  // グローバルスタイルを定義
+  const circleAnimationStyles = `
+    @keyframes strokeAnimation {
+      0% { stroke-dashoffset: 251.2; }
+      20% { stroke-dashoffset: 200.96; }
+      40% { stroke-dashoffset: 150.72; }
+      60% { stroke-dashoffset: 100.48; }
+      80% { stroke-dashoffset: 50.24; }
+      100% { stroke-dashoffset: 0; }
+    }
+    
+    @keyframes countUp {
+      0% { content: "0%"; }
+      20% { content: "20%"; }
+      40% { content: "40%"; }
+      60% { content: "60%"; }
+      80% { content: "80%"; }
+      100% { content: "100%"; }
+    }
+    
+    @keyframes glowPulse {
+      0%, 100% { filter: drop-shadow(0 0 3px var(--glow-color)); }
+      50% { filter: drop-shadow(0 0 12px var(--glow-color)); }
+    }
+    
+    @keyframes ping {
+      0% { opacity: 0; }
+      30% { opacity: 1; }
+      75%, 100% { transform: scale(2); opacity: 0; }
+    }
+    
+    @keyframes rotateIn {
+      0% { transform: rotate(-90deg) scale(0.8); opacity: 0; }
+      100% { transform: rotate(0) scale(1); opacity: 1; }
+    }
+    
+    @keyframes fadeSlideUp {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    .progress-circle {
+      transform-origin: center;
+      transform: rotate(-90deg);
+    }
+    
+    .progress-circle-bg {
+      opacity: 0.2;
+      stroke: rgba(255, 255, 255, 0.3);
+      filter: blur(1px);
+    }
+    
+    .progress-text::after {
+      content: "0%";
+      animation: countUp 5s steps(5) forwards;
+    }
+    
+    .progress-container {
+      animation: rotateIn 1s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .agent-label {
+      animation: fadeSlideUp 0.8s forwards cubic-bezier(0.22, 1, 0.36, 1);
+    }
+  `;
+
+  // エージェント名の背景アニメーション
+  useEffect(() => {
+    if (agentBackgroundRef.current) {
+      const canvas = agentBackgroundRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // キャンバスサイズを設定
+      const setCanvasSize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      
+      setCanvasSize();
+      window.addEventListener('resize', setCanvasSize);
+      
+      // エージェント名の表示に関する設定
+      const agents: {
+        x: number;
+        y: number;
+        name: string;
+        opacity: number;
+        size: number;
+        direction: number;
+        speed: number;
+        maxOpacity: number;
+      }[] = [];
+      
+      // エージェント名を生成
+      const createAgents = () => {
+        agents.length = 0;
+        const count = Math.min(30, Math.floor(window.innerWidth * window.innerHeight / 40000));
+        
+        for (let i = 0; i < count; i++) {
+          const randomAgentName = agentNames[Math.floor(Math.random() * agentNames.length)];
+          
+          agents.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            name: randomAgentName,
+            opacity: Math.random() * 0.2,
+            size: 10 + Math.random() * 14,
+            direction: Math.random() > 0.5 ? 1 : -1,
+            speed: 0.002 + Math.random() * 0.004,
+            maxOpacity: 0.3 + Math.random() * 0.2
+          });
+        }
+      };
+      
+      createAgents();
+      
+      // エージェント名のアニメーション
+      const animate = () => {
+        try {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          const time = performance.now() * 0.001;
+          
+          // エージェント名を描画
+          agents.forEach(agent => {
+            // 明滅のサイン波を計算（時間とスピードに基づく）
+            const opacityMultiplier = (Math.sin(time * agent.speed * 2 + agent.x * 0.01) + 1) * 0.5;
+            const currentOpacity = opacityMultiplier * agent.maxOpacity;
+            
+            // テキストの描画
+            ctx.font = `${agent.size}px Montserrat, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // 発光効果のためのシャドウ設定
+            ctx.shadowColor = 'rgba(100, 200, 255, 0.7)';
+            ctx.shadowBlur = 5 + 10 * opacityMultiplier;
+            
+            // テキストの色と描画
+            const textColor = `rgba(200, 230, 255, ${currentOpacity})`;
+            ctx.fillStyle = textColor;
+            ctx.fillText(agent.name, agent.x, agent.y);
+            
+            // シャドウをリセット
+            ctx.shadowBlur = 0;
+            
+            // スクロール効果（ゆっくりと移動）
+            agent.x += agent.direction * 0.2;
+            
+            // 画面外に出たら反対側から再登場
+            if (agent.x > canvas.width + 100) agent.x = -100;
+            if (agent.x < -100) agent.x = canvas.width + 100;
+          });
+          
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } catch (error) {
+          console.error("Agent animation error:", error);
+          animationFrameRef.current = requestAnimationFrame(animate);
+        }
+      };
+      
+      animate();
+      
+      return () => {
+        window.removeEventListener('resize', setCanvasSize);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
+    }
+  }, []);
+
+  // 水晶玉アニメーション用のuseEffect（復元）
+  useEffect(() => {
+    if (sphereCanvasRef.current) {
+      // キャンバスとコンテキストの取得
+      const canvas = sphereCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // キャンバスサイズを設定 - 親要素のサイズに合わせる
+      const setCanvasSize = () => {
+        // コンテナのサイズを取得
+        const container = canvas.parentElement;
+        if (container) {
+          canvas.width = container.clientWidth;
+          canvas.height = container.clientHeight;
+        } else {
+          // デフォルトサイズ
+          canvas.width = 350;
+          canvas.height = 350;
+        }
+      };
+      
+      setCanvasSize();
+      
+      // ウィンドウリサイズ時に再設定
+      const handleResize = () => {
+        setCanvasSize();
+        // 点の再生成は不要、座標計算時にcanvas.widthを使用
+      };
+      
+      window.addEventListener('resize', handleResize);
+      
+      // 点の配列を定義
+      const dots: any[] = [];
+      
+      // 天体風の色の配列
+      const starColors = [
+        'rgba(0, 255, 255, 0.9)',  // 明るいシアン
+        'rgba(0, 210, 255, 0.8)',  // シアンブルー
+        'rgba(0, 190, 230, 0.8)',  // やや暗いシアン
+        'rgba(0, 170, 210, 0.7)',  // 深いシアン
+        'rgba(0, 150, 190, 0.7)',  // 濃いシアンブルー
+        'rgba(110, 220, 255, 0.7)' // 明るいシアンブルー
+      ];
+      
+      // 球体上に点を生成
+      const generateSphere = () => {
+        // キャンバスのサイズが変わっている可能性があるので再取得
+        const canvasSize = Math.min(canvas.width, canvas.height);
+        const numDots = 1500; // 点の数
+        const radius = canvasSize * 0.45; // 球体の半径を完全な円形にするために最小値を使用
+        
+        dots.length = 0; // 配列をクリア
+        
+        for (let i = 0; i < numDots; i++) {
+          // 球面上の点を均等に分布させる
+          const u = Math.random();
+          const v = Math.random();
+          const theta = 2 * Math.PI * u; // 0～2π（経度）
+          const phi = Math.acos(2 * v - 1); // 0～π（緯度）
+          
+          const x = radius * Math.sin(phi) * Math.cos(theta);
+          const y = radius * Math.sin(phi) * Math.sin(theta);
+          const z = radius * Math.cos(phi);
+          
+          // ランダムな大きさとランダムな色を割り当て
+          const randomSize = Math.random();
+          const starSize = randomSize * 2.5 + 0.3; // 大きさをよりバリエーション豊かに
+          const colorIndex = Math.floor(Math.random() * starColors.length);
+          const brightness = randomSize * 0.7 + 0.3; // 明るさもランダムに
+          
+          // 星の瞬きのパラメータ
+          const twinkle = Math.random() * 0.08 + 0.04; // 瞬きの速度をさらに速く
+          const twinkleOffset = Math.random() * Math.PI * 2; // 瞬きの初期位相
+          
+          dots.push({
+            x, y, z,
+            radius: starSize,
+            color: starColors[colorIndex],
+            brightness: brightness,
+            twinkle: twinkle,
+            twinkleOffset: twinkleOffset
+          });
+        }
+      };
+      
+      generateSphere();
+      
+      // アニメーションフレーム
+      let angle = 0;
+      let time = 0;
+      
+      const animate = () => {
+        try {
+          // キャンバスをクリア（透明に）
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // 完全な円形の背景を描画（透明に）
+          ctx.beginPath();
+          ctx.arc(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) / 2 * 0.95, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+          ctx.fill();
+          
+          // 中心点を正確に計算
+          const centerX = Math.floor(canvas.width / 2);
+          const centerY = Math.floor(canvas.height / 2);
+          
+          // 共通で使用する半径を定義
+          const targetRadius = Math.min(canvas.width, canvas.height) * 0.45;
+          
+          // 回転角度と時間を更新
+          angle += 0.006; // 回転を少し遅く
+          time += 0.016; // 約60fpsで1秒あたり1増加
+          
+          // 点を描画
+          for (const dot of dots) {
+            // 回転行列を適用（Y軸周り）
+            const cosAngle = Math.cos(angle);
+            const sinAngle = Math.sin(angle);
+            
+            const rotatedX = dot.x * cosAngle - dot.z * sinAngle;
+            const rotatedZ = dot.x * sinAngle + dot.z * cosAngle;
+            
+            // Z値に基づいて大きさと透明度を調整（完全な球体効果のために調整）
+            const scale = (rotatedZ + targetRadius) / (targetRadius * 2);
+            
+            // 瞬きのエフェクト（サイン波で明るさを変化させる）
+            const twinkleEffect = Math.sin(time * dot.twinkle + dot.twinkleOffset) * 0.3 + 0.7;
+            const size = Math.max(0.1, Math.min(dot.radius * (0.5 + scale) * twinkleEffect, 10)); // 最小・最大値を設定
+            const alpha = Math.max(0.1, Math.min((0.1 + scale * dot.brightness) * twinkleEffect, 1.0)); // 最小・最大値を設定
+            
+            // baseColorを計算
+            const baseColor = dot.color.replace(/[^,]+(?=\))/, alpha.toString());
+            
+            // グラデーションを使って輝く星を表現
+            const exactX = Math.round(centerX + rotatedX);
+            const exactY = Math.round(centerY + dot.y);
+
+            // 画面内の点のみ描画（完全な円形を保つため）
+            const distance = Math.sqrt(Math.pow(exactX - centerX, 2) + Math.pow(exactY - centerY, 2));
+            if (distance <= targetRadius) {
+              const grd = ctx.createRadialGradient(
+                exactX, exactY, 0,
+                exactX, exactY, size * 2
+              );
+              
+              // グラデーションカラーストップを設定
+              grd.addColorStop(0, baseColor);
+              grd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+              
+              // 点を描画
+              ctx.beginPath();
+              ctx.arc(
+                exactX,
+                exactY,
+                size,
+                0, Math.PI * 2
+              );
+              ctx.fillStyle = baseColor;
+              ctx.fill();
+              
+              // 明るい星には輝きを追加
+              if (dot.radius > 1.5) {
+                ctx.beginPath();
+                ctx.arc(
+                  exactX,
+                  exactY,
+                  size * 1.8,
+                  0, Math.PI * 2
+                );
+                ctx.fillStyle = grd;
+                ctx.fill();
+                
+                // 最も明るい星には十字の光芒を追加
+                if (dot.radius > 2.0 && isFinite(size)) {
+                  const glowSize = isFinite(size * 3) ? size * 3 : 6;
+                  
+                  if (isFinite(exactX) && isFinite(exactY) && isFinite(glowSize)) {
+                    // 水平の光芒
+                    ctx.beginPath();
+                    ctx.moveTo(exactX - glowSize, exactY);
+                    ctx.lineTo(exactX + glowSize, exactY);
+                    ctx.strokeStyle = `rgba(0, 255, 255, ${Math.min(alpha * 0.3, 1)})`;
+                    ctx.lineWidth = Math.max(0.1, Math.min(size * 0.5, 10)); // 範囲を制限
+                    ctx.stroke();
+                    
+                    // 垂直の光芒
+                    ctx.beginPath();
+                    ctx.moveTo(exactX, exactY - glowSize);
+                    ctx.lineTo(exactX, exactY + glowSize);
+                    ctx.strokeStyle = `rgba(0, 255, 255, ${Math.min(alpha * 0.3, 1)})`;
+                    ctx.lineWidth = Math.max(0.1, Math.min(size * 0.5, 10)); // 範囲を制限
+                    ctx.stroke();
+                  }
+                }
+              }
+            }
+          }
+          
+          // 次のフレームをリクエスト
+          requestAnimationFrame(animate);
+        } catch (error) {
+          console.error("Animation error:", error);
+          // エラーが発生しても続行
+          requestAnimationFrame(animate);
+        }
+      };
+      
+      // アニメーションを開始
+      animate();
+      
+      // クリーンアップ関数
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
+    }
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[600px] w-full">
       <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        
         @keyframes pulse {
           0%, 100% { opacity: 0.6; transform: scale(0.98); }
           50% { opacity: 1; transform: scale(1); }
-        }
-        
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        
-        @keyframes dash {
-          0% { stroke-dashoffset: 1000; }
-          100% { stroke-dashoffset: 0; }
-        }
-        
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        
-        .particle {
-          position: absolute;
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: white;
-          box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
-        }
-        
-        .circle-loader {
-          animation: rotate 8s linear infinite;
-        }
-        
-        .circle-path {
-          stroke-dasharray: 1000;
-          stroke-dashoffset: 0;
-          animation: dash 4s ease-in-out infinite alternate;
-        }
-        
-        .floating-icon {
-          animation: float 6s ease-in-out infinite;
-        }
-        
-        .pulse-icon {
-          animation: pulse 3s ease-in-out infinite;
-        }
-        
-        .gradient-bg {
-          background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-          background-size: 400% 400%;
-          animation: gradient 15s ease infinite;
         }
         
         @keyframes gradient {
@@ -940,69 +1447,495 @@ function BusinessLoadingAnimation() {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .gradient-text {
+          background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+          background-size: 400% 400%;
+          animation: gradient 15s ease infinite;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        
+        .loading-dot {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .loading-dot:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        
+        .loading-dot:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+        
+        .loading-ring {
+          border: 2px solid rgba(0, 200, 255, 0.3);
+          border-top: 2px solid rgba(0, 200, 255, 0.8);
+          border-radius: 50%;
+          width: 130%;
+          height: 130%;
+          animation: spin 2s linear infinite;
+          position: absolute;
+          top: -15%;
+          left: -15%;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* サークルアニメーションスタイルをここに統合 */
+        @keyframes strokeAnimation {
+          0% { stroke-dashoffset: 251.2; }
+          20% { stroke-dashoffset: 200.96; }
+          40% { stroke-dashoffset: 150.72; }
+          60% { stroke-dashoffset: 100.48; }
+          80% { stroke-dashoffset: 50.24; }
+          100% { stroke-dashoffset: 0; }
+        }
+        
+        @keyframes countUp {
+          0% { content: "0%"; }
+          20% { content: "20%"; }
+          40% { content: "40%"; }
+          60% { content: "60%"; }
+          80% { content: "80%"; }
+          100% { content: "100%"; }
+        }
+        
+        @keyframes glowPulse {
+          0%, 100% { filter: drop-shadow(0 0 3px var(--glow-color)); }
+          50% { filter: drop-shadow(0 0 12px var(--glow-color)); }
+        }
+        
+        @keyframes ping {
+          0% { opacity: 0; }
+          30% { opacity: 1; }
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+        
+        @keyframes rotateIn {
+          0% { transform: rotate(-90deg) scale(0.8); opacity: 0; }
+          100% { transform: rotate(0) scale(1); opacity: 1; }
+        }
+        
+        @keyframes fadeSlideUp {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .progress-circle {
+          transform-origin: center;
+          transform: rotate(-90deg);
+        }
+        
+        .progress-circle-bg {
+          opacity: 0.2;
+          stroke: rgba(255, 255, 255, 0.3);
+          filter: blur(1px);
+        }
+        
+        .progress-text::after {
+          content: "0%";
+          animation: countUp 5s steps(5) forwards;
+        }
+        
+        .progress-container {
+          animation: rotateIn 1s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .agent-label {
+          animation: fadeSlideUp 0.8s forwards cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes pulse-glow {
+          0%, 100% {
+            text-shadow: 
+              0 0 2px rgba(255, 255, 255, 0.8),
+              0 0 5px rgba(120, 220, 255, 0.5),
+              0 0 10px rgba(100, 200, 255, 0.4),
+              0 0 15px rgba(80, 180, 255, 0.3),
+              0 0 20px rgba(60, 160, 255, 0.2);
+          }
+          50% {
+            text-shadow:
+              0 0 3px rgba(255, 255, 255, 1),
+              0 0 7px rgba(120, 220, 255, 0.7),
+              0 0 15px rgba(100, 200, 255, 0.6),
+              0 0 20px rgba(80, 180, 255, 0.5),
+              0 0 25px rgba(60, 160, 255, 0.4);
+          }
+        }
+        
+        .cristal-text {
+          animation: pulse-glow 3s infinite ease-in-out;
+          font-family: 'Montserrat', sans-serif;
+        }
+
+        /* エージェント名アニメーション用スタイル */
+        .agent-background-canvas {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1;
+          pointer-events: none;
+        }
       `}</style>
       
-      <div className="relative w-48 h-48 mb-8">
-        {/* 複雑な円形ローダー */}
-        <div className="absolute inset-0 circle-loader">
-          <svg width="100%" height="100%" viewBox="0 0 200 200">
-            <defs>
-              <linearGradient id="loader-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FF3CAC" />
-                <stop offset="50%" stopColor="#784BA0" />
-                <stop offset="100%" stopColor="#2B86C5" />
-              </linearGradient>
-            </defs>
-            <circle cx="100" cy="100" r="80" fill="none" stroke="url(#loader-gradient)" strokeWidth="4" strokeLinecap="round" className="circle-path" />
-            <circle cx="100" cy="100" r="70" fill="none" stroke="#FF3CAC" strokeWidth="2" strokeDasharray="10 5" className="circle-path" style={{animationDuration: '6s'}} />
-            <circle cx="100" cy="100" r="60" fill="none" stroke="#784BA0" strokeWidth="3" strokeDasharray="5 3" className="circle-path" style={{animationDuration: '3s'}} />
-          </svg>
-        </div>
+      {/* エージェント名背景アニメーション */}
+      <canvas 
+        ref={agentBackgroundRef}
+        className="agent-background-canvas"
+      />
+      
+      {/* 水晶玉アニメーション */}
+      <div className="relative w-80 h-80 mb-8 overflow-hidden mx-auto" style={{ zIndex: 2 }}>
+        {/* 外側のリング */}
+        <div className="loading-ring"></div>
+        <div className="loading-ring" style={{ animationDuration: '3s', width: '140%', height: '140%', top: '-20%', left: '-20%', opacity: 0.6 }}></div>
+        <div className="loading-ring" style={{ animationDuration: '5s', width: '160%', height: '160%', top: '-30%', left: '-30%', opacity: 0.3 }}></div>
         
-        {/* 中央アイコン */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 p-1 floating-icon shadow-lg shadow-purple-500/30">
-            <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
-              <Star className="h-10 w-10 text-white pulse-icon" />
+        {/* 水晶玉 */}
+        <div className="w-full h-full rounded-full overflow-hidden relative backdrop-blur-sm bg-white/10 border border-white/20">
+          <canvas 
+            ref={sphereCanvasRef} 
+            className="w-full h-full absolute top-0 left-0"
+          />
+
+          {/* Cristalテキスト */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 text-center pointer-events-none">
+            <div 
+              className="text-4xl font-extrabold tracking-wider cristal-text" 
+              style={{ 
+                background: 'linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(210,235,255,1) 50%, rgba(150,210,255,1) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 5px rgba(120, 220, 255, 0.8))',
+                letterSpacing: '0.05em'
+              }}
+            >
+              Cristal
             </div>
           </div>
         </div>
-        
-        {/* パーティクル効果 */}
-        {Array.from({length: 12}).map((_, i) => (
-          <div 
-            key={i} 
-            className="particle" 
-            style={{
-              top: `${50 + 35 * Math.sin(i * Math.PI / 6)}%`,
-              left: `${50 + 35 * Math.cos(i * Math.PI / 6)}%`,
-              animation: `sparkle ${2 + i % 3}s ease-in-out infinite ${i * 0.2}s`
-            }}
-          />
-        ))}
       </div>
       
       {/* テキスト部分 */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-500 bg-clip-text text-transparent tracking-wider">
+      <div className="text-center mt-4 animate-[fadeIn_1s_ease-in]" style={{ zIndex: 3, position: 'relative' }}>
+        
+        <h2 className="text-3xl font-bold mb-4 tracking-wider bg-gradient-to-r from-blue-400 via-pink-500 to-purple-500 bg-clip-text text-transparent">
           新規事業創出計画を生成中
         </h2>
-        <div className="flex items-center justify-center gap-1.5 mb-6">
-          <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" style={{animationDelay: '0ms'}}></span>
-          <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" style={{animationDelay: '300ms'}}></span>
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" style={{animationDelay: '600ms'}}></span>
+        
+        <div className="bg-black/20 backdrop-blur-lg p-6 pt-4 rounded-2xl border border-white/10 shadow-2xl max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {/* Circle Progress Bar 1 - Business Development */}
+            <div className="flex flex-col items-center" style={{ '--delay': '0s' } as any}>
+              <div className="relative w-28 h-28 progress-container" style={{ 
+                animationDelay: '0.1s',
+                '--glow-color': 'rgba(59, 130, 246, 0.7)',
+                animation: 'rotateIn 0.8s forwards cubic-bezier(0.34, 1.56, 0.64, 1)'
+              } as any}>
+                <div className="absolute inset-0 rounded-full bg-blue-500/10 backdrop-blur-sm"></div>
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  {/* Background Circle */}
+                  <circle 
+                    className="progress-circle-bg" 
+                    strokeWidth="10" 
+                    stroke="currentColor" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                  />
+                  
+                  {/* Defs for gradient */}
+                  <defs>
+                    <linearGradient id="gradientBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#3B82F6" />
+                      <stop offset="100%" stopColor="#60A5FA" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Progress Circle */}
+                  <circle 
+                    className="progress-circle" 
+                    strokeWidth="10" 
+                    stroke="url(#gradientBlue)" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                    strokeDasharray="251.2" 
+                    strokeDashoffset="251.2"
+                    strokeLinecap="round"
+                    style={{ 
+                      '--target-offset': '0',
+                      animation: `strokeAnimation 5s forwards cubic-bezier(0.34, 1.56, 0.64, 1), glowPulse 3s infinite ease-in-out`,
+                      filter: 'drop-shadow(0 0 5px rgba(59, 130, 246, 0.7))'
+                    } as any}
+                  />
+                </svg>
+                
+                {/* Percentage Text */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-white flex items-center justify-center">
+                  <span className="progress-text" style={{ 
+                    '--percent': '"100%"',
+                    '--count-20': '"20%"',
+                    '--count-40': '"40%"',
+                    '--count-60': '"60%"',
+                    '--count-80': '"80%"',
+                    '--count-100': '"100%"'
+                  } as any}></span>
+                </div>
+                
+                {/* Tiny pulsing dot - 最初は非表示 */}
+                <div className="absolute top-0 right-0 w-3 h-3 bg-blue-400 rounded-full animate-ping" style={{ animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite', animationDelay: '2s', opacity: 0, animationFillMode: 'forwards' }}></div>
+              </div>
+              <p className="text-white font-medium mt-4 text-lg agent-label" style={{ animationDelay: '0.2s' } as any}>
+                Business Development Agent
+              </p>
+            </div>
+            
+            {/* Circle Progress Bar 2 - Market Analysis */}
+            <div className="flex flex-col items-center">
+              <div className="relative w-28 h-28 progress-container" style={{ 
+                animationDelay: '0.3s',
+                '--glow-color': 'rgba(16, 185, 129, 0.7)',
+                animation: 'rotateIn 0.8s forwards cubic-bezier(0.34, 1.56, 0.64, 1)'
+              } as any}>
+                <div className="absolute inset-0 rounded-full bg-green-500/10 backdrop-blur-sm"></div>
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  {/* Background Circle */}
+                  <circle 
+                    className="progress-circle-bg" 
+                    strokeWidth="10" 
+                    stroke="currentColor" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                  />
+                  
+                  {/* Defs for gradient */}
+                  <defs>
+                    <linearGradient id="gradientGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10B981" />
+                      <stop offset="100%" stopColor="#34D399" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Progress Circle */}
+                  <circle 
+                    className="progress-circle" 
+                    strokeWidth="10" 
+                    stroke="url(#gradientGreen)" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                    strokeDasharray="251.2" 
+                    strokeDashoffset="251.2"
+                    strokeLinecap="round"
+                    style={{ 
+                      '--target-offset': '0',
+                      animation: `strokeAnimation 5s forwards cubic-bezier(0.34, 1.56, 0.64, 1), glowPulse 3s infinite ease-in-out`,
+                      filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.7))',
+                      animationDelay: '0.2s'
+                    } as any}
+                  />
+                </svg>
+                
+                {/* Percentage Text */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-white flex items-center justify-center">
+                  <span className="progress-text" style={{ 
+                    '--percent': '"100%"',
+                    '--count-20': '"20%"',
+                    '--count-40': '"40%"',
+                    '--count-60': '"60%"',
+                    '--count-80': '"80%"',
+                    '--count-100': '"100%"'
+                  } as any}></span>
+                </div>
+                
+                {/* Tiny pulsing dot - 最初は非表示 */}
+                <div className="absolute top-0 right-0 w-3 h-3 bg-green-400 rounded-full animate-ping" style={{ animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite', animationDelay: '2.2s', opacity: 0, animationFillMode: 'forwards' }}></div>
+              </div>
+              <p className="text-white font-medium mt-4 text-lg agent-label" style={{ animationDelay: '0.4s' } as any}>
+                Market Analysis Agent
+              </p>
+            </div>
+            
+            {/* Circle Progress Bar 3 - Patent */}
+            <div className="flex flex-col items-center">
+              <div className="relative w-28 h-28 progress-container" style={{ 
+                animationDelay: '0.5s',
+                '--glow-color': 'rgba(236, 72, 153, 0.7)',
+                animation: 'rotateIn 0.8s forwards cubic-bezier(0.34, 1.56, 0.64, 1)'
+              } as any}>
+                <div className="absolute inset-0 rounded-full bg-pink-500/10 backdrop-blur-sm"></div>
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  {/* Background Circle */}
+                  <circle 
+                    className="progress-circle-bg" 
+                    strokeWidth="10" 
+                    stroke="currentColor" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                  />
+                  
+                  {/* Defs for gradient */}
+                  <defs>
+                    <linearGradient id="gradientPink" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#EC4899" />
+                      <stop offset="100%" stopColor="#F472B6" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Progress Circle */}
+                  <circle 
+                    className="progress-circle" 
+                    strokeWidth="10" 
+                    stroke="url(#gradientPink)" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                    strokeDasharray="251.2" 
+                    strokeDashoffset="251.2"
+                    strokeLinecap="round"
+                    style={{ 
+                      '--target-offset': '0',
+                      animation: `strokeAnimation 5s forwards cubic-bezier(0.34, 1.56, 0.64, 1), glowPulse 3s infinite ease-in-out`,
+                      filter: 'drop-shadow(0 0 5px rgba(236, 72, 153, 0.7))',
+                      animationDelay: '0.4s'
+                    } as any}
+                  />
+                </svg>
+                
+                {/* Percentage Text */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-white flex items-center justify-center">
+                  <span className="progress-text" style={{ 
+                    '--percent': '"100%"',
+                    '--count-20': '"20%"',
+                    '--count-40': '"40%"',
+                    '--count-60': '"60%"',
+                    '--count-80': '"80%"',
+                    '--count-100': '"100%"'
+                  } as any}></span>
+                </div>
+                
+                {/* Tiny pulsing dot - 最初は非表示 */}
+                <div className="absolute top-0 right-0 w-3 h-3 bg-pink-400 rounded-full animate-ping" style={{ animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite', animationDelay: '2.4s', opacity: 0, animationFillMode: 'forwards' }}></div>
+              </div>
+              <p className="text-white font-medium mt-4 text-lg agent-label" style={{ animationDelay: '0.6s' } as any}>
+                Patent Agent
+              </p>
+            </div>
+            
+            {/* Circle Progress Bar 4 - HR */}
+            <div className="flex flex-col items-center">
+              <div className="relative w-28 h-28 progress-container" style={{ 
+                animationDelay: '0.7s',
+                '--glow-color': 'rgba(245, 158, 11, 0.7)',
+                animation: 'rotateIn 0.8s forwards cubic-bezier(0.34, 1.56, 0.64, 1)'
+              } as any}>
+                <div className="absolute inset-0 rounded-full bg-amber-500/10 backdrop-blur-sm"></div>
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  {/* Background Circle */}
+                  <circle 
+                    className="progress-circle-bg" 
+                    strokeWidth="10" 
+                    stroke="currentColor" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                  />
+                  
+                  {/* Defs for gradient */}
+                  <defs>
+                    <linearGradient id="gradientAmber" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#F59E0B" />
+                      <stop offset="100%" stopColor="#FBBF24" />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Progress Circle */}
+                  <circle 
+                    className="progress-circle" 
+                    strokeWidth="10" 
+                    stroke="url(#gradientAmber)" 
+                    fill="none" 
+                    r="40" 
+                    cx="50" 
+                    cy="50" 
+                    strokeDasharray="251.2" 
+                    strokeDashoffset="251.2"
+                    strokeLinecap="round"
+                    style={{ 
+                      '--target-offset': '0',
+                      animation: `strokeAnimation 5s forwards cubic-bezier(0.34, 1.56, 0.64, 1), glowPulse 3s infinite ease-in-out`,
+                      filter: 'drop-shadow(0 0 5px rgba(245, 158, 11, 0.7))',
+                      animationDelay: '0.6s'
+                    } as any}
+                  />
+                </svg>
+                
+                {/* Percentage Text */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl font-bold text-white flex items-center justify-center">
+                  <span className="progress-text" style={{ 
+                    '--percent': '"100%"',
+                    '--count-20': '"20%"',
+                    '--count-40': '"40%"',
+                    '--count-60': '"60%"',
+                    '--count-80': '"80%"',
+                    '--count-100': '"100%"'
+                  } as any}></span>
+                </div>
+                
+                {/* Tiny pulsing dot - 最初は非表示 */}
+                <div className="absolute top-0 right-0 w-3 h-3 bg-amber-400 rounded-full animate-ping" style={{ animation: 'ping 1s cubic-bezier(0, 0, 0.2, 1) infinite', animationDelay: '2.6s', opacity: 0, animationFillMode: 'forwards' }}></div>
+              </div>
+              <p className="text-white font-medium mt-4 text-lg agent-label" style={{ animationDelay: '0.8s' } as any}>
+                HR Agent
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center mt-8 pt-4 border-t border-white/10">
+            <p className="text-lg text-white font-medium">{progressText}</p>
+            <div className="flex">
+              <div className="loading-dot w-2 h-2 bg-cyan-400 rounded-full mx-0.5"></div>
+              <div className="loading-dot w-2 h-2 bg-cyan-400 rounded-full mx-0.5"></div>
+              <div className="loading-dot w-2 h-2 bg-cyan-400 rounded-full mx-0.5"></div>
+            </div>
+          </div>
         </div>
-        <p className="text-gray-300 max-w-md mx-auto">
-          市場データの統合、特許分析、人材リソース評価を行っています。
-          革新的なビジネスモデルの構築までお待ちください。
-        </p>
       </div>
     </div>
   );
 }
 
 // 新規事業創出計画コンポーネント
-function BusinessVenturePlan({ onStart, onCancel }: { onStart: () => void, onCancel: () => void }) {
+// 親コンポーネントのexecutionAudioRefを渡すためのインターフェース
+interface BusinessVenturePlanProps {
+  onStart: () => void;
+  onCancel: () => void;
+  executionAudioRef?: React.RefObject<HTMLAudioElement | null>;
+}
+
+function BusinessVenturePlan({ onStart, onCancel, executionAudioRef }: BusinessVenturePlanProps) {
   // フェーズの定義
   const phases = [
     {
@@ -1054,6 +1987,115 @@ function BusinessVenturePlan({ onStart, onCancel }: { onStart: () => void, onCan
   // アニメーション用の状態
   const [activePhase, setActivePhase] = useState(1);
   const [isAnimating, setIsAnimating] = useState(false);
+  
+  // 内部の音声要素への参照
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
+  // 実行ボタンのクリックハンドラ
+  const handleExecuteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log('計画実行ボタンがクリックされました');
+    
+    // 実行音声再生の処理
+    try {
+      // まず親コンポーネントから渡されたRefをチェック
+      if (executionAudioRef && executionAudioRef.current) {
+        const audio = executionAudioRef.current;
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        
+        console.log('親から渡されたaudioRefを使用します');
+        
+        // インライン関数で再生を試みる（フォールバックも実装）
+        const playWithFallback = () => {
+          const playPromise = audio.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('実行音声の再生に成功しました');
+                // 音声再生が成功したらコールバックを実行
+                setTimeout(() => onStart(), 100);
+              })
+              .catch((error: Error) => {
+                console.error('実行音声の再生に失敗しました:', error);
+                // 音声再生に失敗した場合でもコールバックを実行
+                onStart();
+              });
+          } else {
+            console.warn('playPromise is undefined');
+            onStart();
+          }
+        };
+        
+        // 再生を試みる
+        playWithFallback();
+      } 
+      // 内部のaudioRefをチェック
+      else if (audioRef.current) {
+        console.log('内部のaudioRefを使用します');
+        const audio = audioRef.current;
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('内部audioRefの再生に成功しました');
+              setTimeout(() => onStart(), 100);
+            })
+            .catch((error: Error) => {
+              console.error('内部audioRefの再生に失敗しました:', error);
+              onStart();
+            });
+        } else {
+          onStart();
+        }
+      }
+      // 両方のrefがない場合は直接新しいAudioオブジェクトを作成
+      else {
+        console.log('いずれのaudioRefも使用できないため、新しいAudioを作成します');
+        const audio = new Audio('/sounds/GOLDRUSH_Execution.mp3');
+        audio.volume = 1.0;
+        
+        // 読み込み完了イベントを設定
+        audio.addEventListener('canplaythrough', () => {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('新規作成した実行音声の再生に成功しました');
+                setTimeout(() => onStart(), 100);
+              })
+              .catch((error: Error) => {
+                console.error('新規作成した実行音声の再生に失敗しました:', error);
+                onStart();
+              });
+          } else {
+            onStart();
+          }
+        }, { once: true });
+        
+        // エラー処理
+        audio.addEventListener('error', (e: Event) => {
+          console.error('音声の読み込みに失敗しました:', e);
+          onStart();
+        }, { once: true });
+        
+        // 読み込み開始
+        audio.load();
+      }
+      
+      // 1秒後には必ずコールバックを実行（保険）
+      setTimeout(() => {
+        onStart();
+      }, 1000);
+    } catch (error) {
+      console.error('音声再生時に例外が発生しました:', error);
+      onStart();
+    }
+  };
   
   // アニメーション効果
   useEffect(() => {
@@ -1165,7 +2207,7 @@ function BusinessVenturePlan({ onStart, onCancel }: { onStart: () => void, onCan
       {/* アクションボタン - 洗練されたデザイン */}
       <div className={`mt-10 flex justify-center space-x-5 opacity-0 ${isAnimating ? 'fade-in-up' : ''}`} style={{ animationDelay: '800ms' }}>
         <button
-          onClick={onStart}
+          onClick={handleExecuteClick}
           className="px-8 py-3 rounded-full bg-gradient-to-r from-blue-500 via-pink-500 to-purple-500 text-white font-bold shadow-xl hover:scale-105 transition duration-200 border border-white/10 relative overflow-hidden group"
         >
           <span className="relative z-10">計画を実行する</span>
@@ -1178,6 +2220,13 @@ function BusinessVenturePlan({ onStart, onCancel }: { onStart: () => void, onCan
           キャンセル
         </button>
       </div>
+      
+      {/* オーディオ要素 */}
+      <audio 
+        ref={audioRef} 
+        src="/sounds/GOLDRUSH_Execution.mp3" 
+        preload="auto" 
+      />
     </div>
   );
 }
@@ -1299,7 +2348,7 @@ function MarketAgentsUI({ query, onBack }: { query: string, onBack: () => void }
         `}</style>
         <div className="loader" />
         <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
-        <div className="text-4xl text-gray-700 font-extrabold tracking-wide drop-shadow-lg">市場分析データから特許を抽出中</div>
+        <div className="text-4xl text-white font-extrabold tracking-wide drop-shadow-lg">市場分析データから特許を抽出中</div>
       </div>
     );
   }
@@ -1406,10 +2455,32 @@ function PatentGallery() {
   const [currentIndex, setCurrentIndex] = useState(1); // 最初は真ん中
   const [showTalentLoading, setShowTalentLoading] = useState(false);
   const [showTalent, setShowTalent] = useState(false);
+  const [showBusinessPlan, setShowBusinessPlan] = useState(false);
+  
+  // 音声参照を作成
+  const dummyAudioRef = useRef<HTMLAudioElement | null>(null);
+  
   const getIndex = (offset: number) => (currentIndex + offset + patents.length) % patents.length;
 
   // 「この特許を選択」ボタン押下時の処理
   const handleSelectPatent = () => {
+    // HR用音声を再生
+    const hrAudio = new Audio('/sounds/Goldrush_HR.mp3');
+    hrAudio.volume = 1.0;
+    
+    // 音声再生を試みる
+    const playPromise = hrAudio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log('HR音声の再生を開始しました');
+        })
+        .catch((error) => {
+          console.error('HR音声の再生に失敗しました:', error);
+        });
+    }
+    
+    // タレントマネジメント画面に遷移する前にローディングを表示
     setShowTalentLoading(true);
     setTimeout(() => {
       setShowTalentLoading(false);
@@ -1449,7 +2520,11 @@ function PatentGallery() {
   }
 
   if (showTalent) {
-    return <TalentManagement />;
+    return <TalentManagement 
+      setShowTalent={setShowTalent} 
+      setShowBusinessPlan={setShowBusinessPlan} 
+      planningAudioRef={dummyAudioRef} 
+    />;
   }
 
   return (
@@ -1583,25 +2658,45 @@ function PatentGallery() {
   );
 }
 
-function TalentManagement() {
+function TalentManagement({ setShowTalent, setShowBusinessPlan, planningAudioRef }: { setShowTalent: React.Dispatch<React.SetStateAction<boolean>>, setShowBusinessPlan: React.Dispatch<React.SetStateAction<boolean>>, planningAudioRef: React.RefObject<HTMLAudioElement | null> }) {
   const [selectedTalent, setSelectedTalent] = useState<number | null>(null);
   const [isInternal, setIsInternal] = useState(true);
   const [selectedTalents, setSelectedTalents] = useState<{internal: number[], external: number[]}>({internal: [], external: []});
 
-  // ダミーデータ
+  // 人材データを更新
   const internalTalents = [
-    { name: "佐藤健", dept: "研究開発部", desc: "AIアルゴリズムの開発責任者。画像認識・自然言語処理に精通。", img: "https://randomuser.me/api/portraits/men/32.jpg" },
-    { name: "鈴木花子", dept: "事業企画部", desc: "新規事業の立ち上げ経験多数。市場分析と戦略立案が得意。", img: "https://randomuser.me/api/portraits/women/44.jpg" },
-    { name: "田中太郎", dept: "営業部", desc: "医療業界向け営業のエキスパート。顧客との信頼関係構築が強み。", img: "https://randomuser.me/api/portraits/men/65.jpg" },
-    { name: "伊藤美咲", dept: "マーケティング部", desc: "デジタルマーケティングのスペシャリスト。SNS戦略に強い。", img: "https://randomuser.me/api/portraits/women/50.jpg" },
-    { name: "小林直樹", dept: "システム部", desc: "インフラ構築とセキュリティ管理のエキスパート。", img: "https://randomuser.me/api/portraits/men/77.jpg" },
+    { name: "柴山 和久", dept: "ソフトバンク株式会社 取締役専務執行役員 CDO", desc: "ビッグデータ解析・AIシステム設計、医療・位置情報データの利活用、匿名化技術、データガバナンスとプライバシー管理。Agoop創業者、順天堂大学客員教授としての実績あり。", img: "https://randomuser.me/api/portraits/men/32.jpg" },
+    { name: "北原 秀文", dept: "SBテンプス株式会社 代表取締役社長", desc: "ヘルスケア領域の新規事業開発、米国Tempus社との技術連携・事業推進、クロスファンクショナルチーム統率。ソフトバンクグループの次世代経営リーダー。", img: "https://randomuser.me/api/portraits/men/44.jpg" },
+    { name: "筒井 多圭志", dept: "ソフトバンク株式会社 取締役専務執行役員 CTO", desc: "通信インフラ設計・医療AIアルゴリズム開発、大規模データ統合・マルチモーダル解析、新規技術導入・R&Dマネジメント。通信・AI分野で20年以上の実績あり。", img: "https://randomuser.me/api/portraits/men/65.jpg" },
+    { name: "井上 剛", dept: "ヘルスケアテクノロジーズ株式会社 ビジネス1課長", desc: "医療機関向けDXコンサルティング、電子カルテ連携プロトコル設計、ヘルスケアデータ事業開発。未病領域のデータ活用モデル構築の実績あり。", img: "https://randomuser.me/api/portraits/men/50.jpg" },
+    { name: "早坂 友紀", dept: "ヘルスケアテクノロジーズ株式会社 ビジネス2課長", desc: "医療機関向け法人営業・クラウドソリューション導入、RPA/AI導入支援、医療データ匿名化処理システム設計。現場密着型のユースケース開発力に優れる。", img: "https://randomuser.me/api/portraits/men/77.jpg" },
   ];
   const externalTalents = [
-    { name: "山本美咲", dept: "外部コンサルタント", desc: "AI導入支援のプロフェッショナル。", img: null },
-    { name: "高橋一生", dept: "特許事務所", desc: "知財・契約法務のスペシャリスト。", img: null },
-    { name: "ジョン・スミス", dept: "海外パートナー", desc: "グローバル展開のアドバイザー。", img: null },
-    { name: "李小龍", dept: "技術顧問", desc: "AI技術の国際的な専門家。", img: null },
+    { name: "加藤勇介", dept: "メドピア株式会社 AI開発最高責任者", desc: "2025年2月就任。医療領域における生成AIの社会実装を推進し、全社的なAIネイティブ化を牽引。", img: null },
+    { name: "沖山翔", dept: "アイリス株式会社 代表取締役", desc: "東京大学医学部卒。救急医・災害派遣医療チーム経験を経て、2017年にAI医療機器スタートアップを創業。医師の技術をAIで再現する事業を展開。", img: null },
+    { name: "丹野龍太郎", dept: "Google DeepMind／アイリス株式会社 Senior Research Fellow", desc: "ケンブリッジ大学・UCL博士。Google Med-Gemini開発の共同第一著者で、医療AIの最前線で活躍。", img: null },
+    { name: "奥村貴史", dept: "北見工業大学 教授", desc: "公衆衛生・保健医療行政の情報化や医療用AI研究に10年以上従事。診断支援AIの研究分野で国内外に発信。", img: null },
   ];
+
+  // 新規事業計画開始関数を追加
+  const handleStartBusinessPlan = () => {
+    // 選択されたタレント情報を取得
+    const selectedInternalTalentData = selectedTalents.internal.map(index => internalTalents[index]);
+    const selectedExternalTalentData = selectedTalents.external.map(index => externalTalents[index]);
+    
+    // グローバル状態を更新し、BusinessVenturePlanコンポーネントを表示
+    setShowTalent(false);
+    setShowBusinessPlan(true);
+    
+    // 選択されたタレント情報をどこかに保存する必要がある場合はここで
+    // 例: sessionStorage.setItem('selectedTalents', JSON.stringify({internal: selectedInternalTalentData, external: selectedExternalTalentData}));
+    
+    // 計画音声を再生
+    if (planningAudioRef.current) {
+      planningAudioRef.current.currentTime = 0;
+      planningAudioRef.current.play().catch((err: Error) => console.error('音声再生エラー:', err));
+    }
+  };
 
   return (
     <div className="min-h-[600px] flex flex-col items-center justify-center px-2 py-12 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-10">
@@ -1640,7 +2735,7 @@ function TalentManagement() {
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
                 )}
-                {t.name === "佐藤健" ? (
+                {t.name === "柴山 和久" ? (
                   <div className="w-20 h-20 rounded-full overflow-hidden mr-4 border-4 border-pink-200 shadow bg-gray-100 flex items-center justify-center relative">
                     <Image
                       src="/sato-takeru.jpg"
@@ -1760,6 +2855,22 @@ function TalentManagement() {
           display: flex;
         }
       `}</style>
+      
+      {/* 新規事業創出計画ボタン */}
+      <div className="w-full flex justify-center mt-14">
+        <button
+          onClick={handleStartBusinessPlan}
+          disabled={selectedTalents.internal.length === 0 && selectedTalents.external.length === 0}
+          className={`flex items-center gap-3 px-10 py-5 rounded-full text-white text-xl font-bold shadow-xl border-2 border-indigo-300 hover:scale-105 transition-all duration-300 ${
+            selectedTalents.internal.length > 0 || selectedTalents.external.length > 0
+              ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600'
+              : 'bg-gray-400 cursor-not-allowed opacity-70'
+          }`}
+        >
+          <Rocket className="w-7 h-7" />
+          新規事業創出計画を開始
+        </button>
+      </div>
     </div>
   );
 }
