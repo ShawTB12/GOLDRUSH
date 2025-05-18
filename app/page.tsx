@@ -110,6 +110,14 @@ export default function Home() {
   // アニメーション関連の状態
   const [isAnalyzing, setIsAnalyzing] = useState(true) // アニメーションを表示する
   
+  // 音声再生用の関数
+  const playStartSound = useCallback(() => {
+    const audio = new Audio('/sounds/GOLDRUSH_START.mp3');
+    audio.play().catch(error => {
+      console.error('音声の再生に失敗しました:', error);
+    });
+  }, []);
+  
   // 音声反応アニメーションのフック
   const { 
     isPlaying: isAudioAnimationPlaying, 
@@ -260,21 +268,24 @@ export default function Home() {
 
   // メッセージ送信処理
   const handleSendMessage = async () => {
-    if (inputMessage.trim() === "") return;
-    try {
-      await sendMessage(inputMessage);
-      setInputMessage("");
-      setMarketQuery(inputMessage);
-      setShowMarketAgents(true);
-    } catch (error) {
-      console.error("メッセージ送信エラー:", error);
-    }
+    if (!inputMessage.trim()) return;
+    
+    // メッセージを送信
+    await sendMessage(inputMessage);
+    setInputMessage("");
+    setMarketQuery(inputMessage);
+    setShowMarketAgents(true);
+
+    // 0.5秒後に音声を再生
+    setTimeout(() => {
+      playStartSound();
+    }, 500);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      // エンターキーでの送信を無効化
+      e.preventDefault();
+      handleSendMessage();
     }
   }
 
