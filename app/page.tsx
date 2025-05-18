@@ -116,6 +116,9 @@ export default function Home() {
   // アニメーション関連の状態
   const [isAnalyzing, setIsAnalyzing] = useState(true) // アニメーションを表示する
   
+  // ローディングアニメーション状態
+  const [showBusinessLoading, setShowBusinessLoading] = useState(false)
+  
   // 音声再生用の関数
   const playStartSound = useCallback(() => {
     const audio = new Audio('/sounds/GOLDRUSH_START.mp3');
@@ -276,16 +279,21 @@ export default function Home() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
     
-    // 常に新規事業計画画面に遷移
+    // まずローディングアニメーションを表示
     await sendMessage(inputMessage);
     setInputMessage("");
-    setShowBusinessPlan(true);
+    setShowBusinessLoading(true);
     setShowMarketAgents(false);
+    setShowBusinessPlan(false);
     
-    // 音声再生（いずれ削除）
+    // 音声再生
+    playStartSound();
+    
+    // 5秒後に新規事業創出計画画面を表示
     setTimeout(() => {
-      playStartSound();
-    }, 500);
+      setShowBusinessLoading(false);
+      setShowBusinessPlan(true);
+    }, 5000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -662,7 +670,9 @@ export default function Home() {
 
               {/* Chat messages */}
               <div className="flex-1 overflow-y-auto p-4 relative">
-                {showBusinessPlan ? (
+                {showBusinessLoading ? (
+                  <BusinessLoadingAnimation />
+                ) : showBusinessPlan ? (
                   <BusinessVenturePlan 
                     onStart={() => {
                       setShowBusinessPlan(false);
@@ -860,6 +870,135 @@ export default function Home() {
       )}
     </>
   )
+}
+
+// 超ハイセンスなローディングアニメーションコンポーネント
+function BusinessLoadingAnimation() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[600px] w-full">
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 0.6; transform: scale(0.98); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes dash {
+          0% { stroke-dashoffset: 1000; }
+          100% { stroke-dashoffset: 0; }
+        }
+        
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        
+        .particle {
+          position: absolute;
+          width: 3px;
+          height: 3px;
+          border-radius: 50%;
+          background: white;
+          box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
+        }
+        
+        .circle-loader {
+          animation: rotate 8s linear infinite;
+        }
+        
+        .circle-path {
+          stroke-dasharray: 1000;
+          stroke-dashoffset: 0;
+          animation: dash 4s ease-in-out infinite alternate;
+        }
+        
+        .floating-icon {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .pulse-icon {
+          animation: pulse 3s ease-in-out infinite;
+        }
+        
+        .gradient-bg {
+          background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+          background-size: 400% 400%;
+          animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}</style>
+      
+      <div className="relative w-48 h-48 mb-8">
+        {/* 複雑な円形ローダー */}
+        <div className="absolute inset-0 circle-loader">
+          <svg width="100%" height="100%" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="loader-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#FF3CAC" />
+                <stop offset="50%" stopColor="#784BA0" />
+                <stop offset="100%" stopColor="#2B86C5" />
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="url(#loader-gradient)" strokeWidth="4" strokeLinecap="round" className="circle-path" />
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#FF3CAC" strokeWidth="2" strokeDasharray="10 5" className="circle-path" style={{animationDuration: '6s'}} />
+            <circle cx="100" cy="100" r="60" fill="none" stroke="#784BA0" strokeWidth="3" strokeDasharray="5 3" className="circle-path" style={{animationDuration: '3s'}} />
+          </svg>
+        </div>
+        
+        {/* 中央アイコン */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 p-1 floating-icon shadow-lg shadow-purple-500/30">
+            <div className="w-full h-full rounded-full bg-black flex items-center justify-center">
+              <Star className="h-10 w-10 text-white pulse-icon" />
+            </div>
+          </div>
+        </div>
+        
+        {/* パーティクル効果 */}
+        {Array.from({length: 12}).map((_, i) => (
+          <div 
+            key={i} 
+            className="particle" 
+            style={{
+              top: `${50 + 35 * Math.sin(i * Math.PI / 6)}%`,
+              left: `${50 + 35 * Math.cos(i * Math.PI / 6)}%`,
+              animation: `sparkle ${2 + i % 3}s ease-in-out infinite ${i * 0.2}s`
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* テキスト部分 */}
+      <div className="text-center">
+        <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-500 bg-clip-text text-transparent tracking-wider">
+          新規事業創出計画を生成中
+        </h2>
+        <div className="flex items-center justify-center gap-1.5 mb-6">
+          <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" style={{animationDelay: '0ms'}}></span>
+          <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" style={{animationDelay: '300ms'}}></span>
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" style={{animationDelay: '600ms'}}></span>
+        </div>
+        <p className="text-gray-300 max-w-md mx-auto">
+          市場データの統合、特許分析、人材リソース評価を行っています。
+          革新的なビジネスモデルの構築までお待ちください。
+        </p>
+      </div>
+    </div>
+  );
 }
 
 // 新規事業創出計画コンポーネント
