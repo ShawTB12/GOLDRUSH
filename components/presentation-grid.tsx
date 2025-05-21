@@ -798,6 +798,7 @@ const slides: SlideInfo[] = [
 export default function PresentationGrid() {
   const [typedTexts, setTypedTexts] = useState<string[]>(Array(slides.length).fill(''));
   const [codeCompleted, setCodeCompleted] = useState<boolean[]>(Array(slides.length).fill(false));
+  const [expandedSlideIndex, setExpandedSlideIndex] = useState<number | null>(null);
   const timers = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
@@ -843,14 +844,54 @@ export default function PresentationGrid() {
     timers.current.push(typingTimer as unknown as NodeJS.Timeout);
   };
 
+  const handleSlideClick = (index: number) => {
+    if (expandedSlideIndex === index) {
+      // 同じスライドをクリックした場合は縮小
+      setExpandedSlideIndex(null);
+    } else {
+      // 別のスライドをクリックした場合は拡大
+      setExpandedSlideIndex(index);
+    }
+  };
+
   return (
     <div className="w-full h-full bg-gray-100 text-black overflow-auto p-0">
-      <div className="grid grid-cols-2 gap-4 p-4">
+      {/* 拡大表示されたスライド */}
+      {expandedSlideIndex !== null && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80"
+          onClick={() => setExpandedSlideIndex(null)}
+        >
+          <div 
+            className="relative w-5/6 h-5/6 max-w-6xl rounded-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative w-full h-full">
+              <Image
+                src={slides[expandedSlideIndex].imagePath}
+                alt={slides[expandedSlideIndex].title}
+                fill
+                className="object-contain"
+                priority
+              />
+              <div className="absolute top-2 right-2 bg-white bg-opacity-70 px-2 py-1 rounded text-sm">
+                {slides[expandedSlideIndex].slideNumber}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* グリッド表示 */}
+      <div className={`grid grid-cols-2 gap-4 p-4 ${expandedSlideIndex !== null ? 'pointer-events-none opacity-50' : ''}`}>
         {slides.map((slide, index) => (
           <div 
             key={index} 
-            className="relative w-full mb-4 overflow-hidden rounded-lg shadow-lg bg-white"
+            className={`relative w-full mb-4 overflow-hidden rounded-lg shadow-lg bg-white cursor-pointer transform transition-transform duration-200 ${
+              expandedSlideIndex === null && codeCompleted[index] ? 'hover:scale-105' : ''
+            }`}
             style={{ aspectRatio: '16/9' }}
+            onClick={() => codeCompleted[index] && handleSlideClick(index)}
           >
             {/* コード表示エリア - コード完了後に非表示 */}
             <div 
@@ -877,6 +918,11 @@ export default function PresentationGrid() {
                   className="object-contain"
                   priority
                 />
+                {codeCompleted[index] && (
+                  <div className="absolute top-2 right-2 bg-white bg-opacity-70 px-2 py-1 rounded text-sm">
+                    {slide.slideNumber}
+                  </div>
+                )}
               </div>
             </div>
           </div>
