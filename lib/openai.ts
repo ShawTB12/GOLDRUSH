@@ -5,9 +5,10 @@ if (!process.env.OPENAI_API_KEY) {
   console.warn('OPENAI_API_KEY is not set in environment variables');
 }
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// APIキーがない場合はダミーのインスタンスを作成
+export const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : {} as OpenAI; // TypeScriptのエラーを回避するためのキャスト
 
 // チャットメッセージ型定義
 export type ChatMessage = {
@@ -20,6 +21,12 @@ export type ChatMessage = {
 // API経由でメッセージを送信し、レスポンスを取得する関数
 export async function sendMessageToOpenAI(messages: ChatMessage[]): Promise<string> {
   try {
+    // APIキーが設定されていない場合はダミーレスポンスを返す
+    if (!process.env.OPENAI_API_KEY) {
+      console.log('Using dummy response because OPENAI_API_KEY is not set');
+      return 'APIキーが設定されていないため、AIアシスタントは応答できません。環境変数にOPENAI_API_KEYを設定してください。';
+    }
+
     // OpenAI APIに送信するためのメッセージフォーマットに変換
     const formattedMessages = messages.map(({ role, content }) => ({
       role, 
