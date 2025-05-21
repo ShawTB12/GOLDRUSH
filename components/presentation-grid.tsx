@@ -816,15 +816,18 @@ export default function PresentationGrid() {
     let currentText = '';
     let charIndex = 0;
     
+    // 3文字ずつ追加することで3倍速に
     const typingTimer = setInterval(() => {
       if (charIndex < code.length) {
-        currentText += code[charIndex];
+        // 3文字ずつ追加（ただし残りが3文字未満の場合は残りを全て追加）
+        const charsToAdd = Math.min(3, code.length - charIndex);
+        currentText += code.substring(charIndex, charIndex + charsToAdd);
         setTypedTexts(prev => {
           const newArray = [...prev];
           newArray[slideIndex] = currentText;
           return newArray;
         });
-        charIndex++;
+        charIndex += charsToAdd;
       } else {
         clearInterval(typingTimer);
         
@@ -835,7 +838,7 @@ export default function PresentationGrid() {
           return newArray;
         });
       }
-    }, 20); // タイピング速度
+    }, 7); // タイピング速度を3倍に (20ms→7ms)
     
     timers.current.push(typingTimer as unknown as NodeJS.Timeout);
   };
@@ -851,7 +854,7 @@ export default function PresentationGrid() {
           >
             {/* コード表示エリア - コード完了後に非表示 */}
             <div 
-              className={`absolute top-0 left-0 w-full z-10 bg-gray-900 overflow-hidden transition-all duration-300 ${
+              className={`absolute top-0 left-0 w-full z-10 bg-gray-900 overflow-hidden transition-all duration-100 ${
                 codeCompleted[index] ? 'h-0 opacity-0' : 'h-full opacity-100'
               }`}
             >
@@ -862,7 +865,7 @@ export default function PresentationGrid() {
             
             {/* スライド画像 - コード完了後に全画面表示 */}
             <div 
-              className={`absolute inset-0 transition-all duration-300 ${
+              className={`absolute inset-0 transition-all duration-100 ${
                 codeCompleted[index] ? 'opacity-100' : 'opacity-0'
               }`}
             >
