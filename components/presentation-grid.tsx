@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
+import TestMarketingGrid from './test-marketing-grid';
 
 interface SlideInfo {
   title: string;
@@ -799,6 +800,7 @@ export default function PresentationGrid() {
   const [typedTexts, setTypedTexts] = useState<string[]>(Array(slides.length).fill(''));
   const [codeCompleted, setCodeCompleted] = useState<boolean[]>(Array(slides.length).fill(false));
   const [expandedSlideIndex, setExpandedSlideIndex] = useState<number | null>(null);
+  const [showTestMarketing, setShowTestMarketing] = useState<boolean>(false);
   const timers = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
@@ -854,8 +856,18 @@ export default function PresentationGrid() {
     }
   };
 
+  const handleSurveyClick = () => {
+    // テストマーケティンググリッドを表示
+    setShowTestMarketing(true);
+  };
+
+  // テストマーケティング画面を表示する場合
+  if (showTestMarketing) {
+    return <TestMarketingGrid />;
+  }
+
   return (
-    <div className="w-full h-full bg-gray-100 text-black overflow-auto p-0">
+    <div className="w-full min-h-full bg-white text-black overflow-auto">
       {/* 拡大表示されたスライド */}
       {expandedSlideIndex !== null && (
         <div 
@@ -882,51 +894,81 @@ export default function PresentationGrid() {
         </div>
       )}
 
-      {/* グリッド表示 */}
-      <div className={`grid grid-cols-2 gap-4 p-4 ${expandedSlideIndex !== null ? 'pointer-events-none opacity-50' : ''}`}>
-        {slides.map((slide, index) => (
-          <div 
-            key={index} 
-            className={`relative w-full mb-4 overflow-hidden rounded-lg shadow-lg bg-white cursor-pointer transform transition-transform duration-200 ${
-              expandedSlideIndex === null && codeCompleted[index] ? 'hover:scale-105' : ''
-            }`}
-            style={{ aspectRatio: '16/9' }}
-            onClick={() => codeCompleted[index] && handleSlideClick(index)}
-          >
-            {/* コード表示エリア - コード完了後に非表示 */}
+      {/* メインコンテナ */}
+      <div className="bg-gray-100 p-4">
+        {/* グリッド表示 */}
+        <div className={`grid grid-cols-2 gap-4 ${expandedSlideIndex !== null ? 'pointer-events-none opacity-50' : ''}`}>
+          {slides.map((slide, index) => (
             <div 
-              className={`absolute top-0 left-0 w-full z-10 bg-gray-900 overflow-hidden transition-all duration-100 ${
-                codeCompleted[index] ? 'h-0 opacity-0' : 'h-full opacity-100'
+              key={index} 
+              className={`relative w-full mb-4 overflow-hidden rounded-lg shadow-lg bg-white cursor-pointer transform transition-transform duration-200 ${
+                expandedSlideIndex === null && codeCompleted[index] ? 'hover:scale-105' : ''
               }`}
+              style={{ aspectRatio: '16/9' }}
+              onClick={() => codeCompleted[index] && handleSlideClick(index)}
             >
-              <pre className="text-xs text-green-400 font-mono p-2 overflow-auto h-full">
-                {typedTexts[index]}
-              </pre>
-            </div>
-            
-            {/* スライド画像 - コード完了後に全画面表示 */}
-            <div 
-              className={`absolute inset-0 transition-all duration-100 ${
-                codeCompleted[index] ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <div className="relative w-full h-full">
-                <Image
-                  src={slide.imagePath}
-                  alt={slide.title}
-                  fill
-                  className="object-contain"
-                  priority
-                />
-                {codeCompleted[index] && (
-                  <div className="absolute top-2 right-2 bg-white bg-opacity-70 px-2 py-1 rounded text-sm">
-                    {slide.slideNumber}
-                  </div>
-                )}
+              {/* コード表示エリア - コード完了後に非表示 */}
+              <div 
+                className={`absolute top-0 left-0 w-full z-10 bg-gray-900 overflow-hidden transition-all duration-100 ${
+                  codeCompleted[index] ? 'h-0 opacity-0' : 'h-full opacity-100'
+                }`}
+              >
+                <pre className="text-xs text-green-400 font-mono p-2 overflow-auto h-full">
+                  {typedTexts[index]}
+                </pre>
+              </div>
+              
+              {/* スライド画像 - コード完了後に全画面表示 */}
+              <div 
+                className={`absolute inset-0 transition-all duration-100 ${
+                  codeCompleted[index] ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                <div className="relative w-full h-full">
+                  <Image
+                    src={slide.imagePath}
+                    alt={slide.title}
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                  {codeCompleted[index] && (
+                    <div className="absolute top-2 right-2 bg-white bg-opacity-70 px-2 py-1 rounded text-sm">
+                      {slide.slideNumber}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      {/* アンケート調査ボタンエリア - 白い背景で下方に拡張 */}
+      <div className="bg-white px-4 py-8 border-t border-gray-200">
+        <div className="flex justify-center">
+          <button
+            onClick={handleSurveyClick}
+            className="flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-xl font-bold shadow-xl border-2 border-blue-300 hover:scale-105 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300"
+          >
+            <svg 
+              className="w-6 h-6" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" 
+              />
+            </svg>
+            ソフトバンク経済圏でテストマーケティング
+          </button>
+        </div>
+
       </div>
     </div>
   );
