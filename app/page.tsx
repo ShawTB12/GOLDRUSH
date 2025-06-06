@@ -43,6 +43,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import StarrySphere from "./components/StarrySphere"
 import { useAudioReactiveAnimation } from "@/hooks/use-audio-reactive-animation"
+import PresentationGrid from "@/components/presentation-grid"
 
 // TypeScript定義 - Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -143,6 +144,10 @@ export default function Home() {
   const [marketQuery, setMarketQuery] = useState("")
   // 新規事業計画モードの状態
   const [showBusinessPlan, setShowBusinessPlan] = useState(false)
+  const [showPresentation, setShowPresentation] = useState(false)
+  const [showPatents, setShowPatents] = useState(false)
+  const [showTalent, setShowTalent] = useState(false)
+  const [showTalentLoading, setShowTalentLoading] = useState(false)
   // スタートアップアニメーションのステート
   const [showStartupAnimation, setShowStartupAnimation] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -792,6 +797,8 @@ export default function Home() {
               <div className="flex-1 overflow-y-auto p-4 relative">
                 {showBusinessLoading ? (
                   <BusinessLoadingAnimation />
+                ) : showPresentation ? (
+                  <PresentationGrid />
                 ) : showBusinessPlan ? (
                   <BusinessVenturePlan 
                     onStart={() => {
@@ -803,8 +810,50 @@ export default function Home() {
                     }}
                     executionAudioRef={executionAudioRef}
                   />
+                ) : showPatents ? (
+                  <PatentGallery 
+                    setShowPatents={setShowPatents}
+                    setShowTalentLoading={setShowTalentLoading}
+                    setShowTalent={setShowTalent}
+                    setShowPresentation={setShowPresentation}
+                  />
+                ) : showTalentLoading ? (
+                  <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
+                    <style>{`
+                      @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                      }
+                      .loader {
+                        border: 8px solid #f3f3f3;
+                        border-top: 8px solid #e879f9;
+                        border-right: 8px solid #818cf8;
+                        border-radius: 50%;
+                        width: 88px;
+                        height: 88px;
+                        animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+                        margin-bottom: 48px;
+                        box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
+                      }
+                    `}</style>
+                    <div className="loader" />
+                    <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
+                  </div>
+                ) : showTalent ? (
+                  <TalentManagement 
+                    setShowTalent={setShowTalent} 
+                    setShowPresentation={setShowPresentation} 
+                    planningAudioRef={planningAudioRef} 
+                  />
                 ) : showMarketAgents ? (
-                  <MarketAgentsUI query={marketQuery} onBack={() => setShowMarketAgents(false)} />
+                  <MarketAgentsUI 
+                    query={marketQuery} 
+                    onBack={() => setShowMarketAgents(false)}
+                    onShowPatents={() => {
+                      setShowMarketAgents(false);
+                      setShowPatents(true);
+                    }}
+                  />
                 ) : (
                   <>
                     {/* 星空の球体アニメーションを表示 */}
@@ -2231,7 +2280,7 @@ function BusinessVenturePlan({ onStart, onCancel, executionAudioRef }: BusinessV
   );
 }
 
-function MarketAgentsUI({ query, onBack }: { query: string, onBack: () => void }) {
+function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBack: () => void, onShowPatents: () => void }) {
   // 進捗率
   const targetProgress = [100, 100, 100, 100];
   const agentResults = [
@@ -2321,7 +2370,7 @@ function MarketAgentsUI({ query, onBack }: { query: string, onBack: () => void }
       setShowLoading(true);
       setTimeout(() => {
         setShowLoading(false);
-        setShowPatents(true);
+        onShowPatents();
       }, 4000);
     }
   };
@@ -2354,7 +2403,8 @@ function MarketAgentsUI({ query, onBack }: { query: string, onBack: () => void }
   }
 
   if (showPatents) {
-    return <PatentGallery />;
+    onShowPatents();
+    return null;
   }
 
   return (
@@ -2395,7 +2445,7 @@ function MarketAgentsUI({ query, onBack }: { query: string, onBack: () => void }
   );
 }
 
-function PatentGallery() {
+function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, setShowPresentation }: { setShowPatents: React.Dispatch<React.SetStateAction<boolean>>, setShowTalentLoading: React.Dispatch<React.SetStateAction<boolean>>, setShowTalent: React.Dispatch<React.SetStateAction<boolean>>, setShowPresentation: React.Dispatch<React.SetStateAction<boolean>> }) {
   const patents = [
     {
       title: "電子カルテ連携型医療データ統合システム",
@@ -2453,9 +2503,8 @@ function PatentGallery() {
     }
   ];
   const [currentIndex, setCurrentIndex] = useState(1); // 最初は真ん中
-  const [showTalentLoading, setShowTalentLoading] = useState(false);
-  const [showTalent, setShowTalent] = useState(false);
-  const [showBusinessPlan, setShowBusinessPlan] = useState(false);
+  const [showTalentLoading, setLocalShowTalentLoading] = useState(false);
+  const [showTalent, setLocalShowTalent] = useState(false);
   
   // 音声参照を作成
   const dummyAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -2481,10 +2530,10 @@ function PatentGallery() {
     }
     
     // タレントマネジメント画面に遷移する前にローディングを表示
-    setShowTalentLoading(true);
+    setLocalShowTalentLoading(true);
     setTimeout(() => {
-      setShowTalentLoading(false);
-      setShowTalent(true);
+      setLocalShowTalentLoading(false);
+      setLocalShowTalent(true);
     }, 4000);
   };
 
@@ -2521,8 +2570,8 @@ function PatentGallery() {
 
   if (showTalent) {
     return <TalentManagement 
-      setShowTalent={setShowTalent} 
-      setShowBusinessPlan={setShowBusinessPlan} 
+      setShowTalent={setLocalShowTalent} 
+      setShowPresentation={setShowPresentation} 
       planningAudioRef={dummyAudioRef} 
     />;
   }
@@ -2658,7 +2707,7 @@ function PatentGallery() {
   );
 }
 
-function TalentManagement({ setShowTalent, setShowBusinessPlan, planningAudioRef }: { setShowTalent: React.Dispatch<React.SetStateAction<boolean>>, setShowBusinessPlan: React.Dispatch<React.SetStateAction<boolean>>, planningAudioRef: React.RefObject<HTMLAudioElement | null> }) {
+function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef }: { setShowTalent: React.Dispatch<React.SetStateAction<boolean>>, setShowPresentation: React.Dispatch<React.SetStateAction<boolean>>, planningAudioRef: React.RefObject<HTMLAudioElement | null> }) {
   const [selectedTalent, setSelectedTalent] = useState<number | null>(null);
   const [isInternal, setIsInternal] = useState(true);
   const [selectedTalents, setSelectedTalents] = useState<{internal: number[], external: number[]}>({internal: [], external: []});
@@ -2678,15 +2727,15 @@ function TalentManagement({ setShowTalent, setShowBusinessPlan, planningAudioRef
     { name: "奥村貴史", dept: "北見工業大学 教授", desc: "公衆衛生・保健医療行政の情報化や医療用AI研究に10年以上従事。診断支援AIの研究分野で国内外に発信。", img: null },
   ];
 
-  // 新規事業計画開始関数を追加
-  const handleStartBusinessPlan = () => {
+  // 資料プレゼンテーション開始関数を追加
+  const handleStartPresentation = () => {
     // 選択されたタレント情報を取得
     const selectedInternalTalentData = selectedTalents.internal.map(index => internalTalents[index]);
     const selectedExternalTalentData = selectedTalents.external.map(index => externalTalents[index]);
     
-    // グローバル状態を更新し、BusinessVenturePlanコンポーネントを表示
+    // グローバル状態を更新し、PresentationGridコンポーネントを表示
     setShowTalent(false);
-    setShowBusinessPlan(true);
+    setShowPresentation(true);
     
     // 選択されたタレント情報をどこかに保存する必要がある場合はここで
     // 例: sessionStorage.setItem('selectedTalents', JSON.stringify({internal: selectedInternalTalentData, external: selectedExternalTalentData}));
@@ -2856,10 +2905,10 @@ function TalentManagement({ setShowTalent, setShowBusinessPlan, planningAudioRef
         }
       `}</style>
       
-      {/* 新規事業創出計画ボタン */}
+      {/* 資料プレゼンテーションボタン */}
       <div className="w-full flex justify-center mt-14">
         <button
-          onClick={handleStartBusinessPlan}
+          onClick={handleStartPresentation}
           disabled={selectedTalents.internal.length === 0 && selectedTalents.external.length === 0}
           className={`flex items-center gap-3 px-10 py-5 rounded-full text-white text-xl font-bold shadow-xl border-2 border-indigo-300 hover:scale-105 transition-all duration-300 ${
             selectedTalents.internal.length > 0 || selectedTalents.external.length > 0
@@ -2868,7 +2917,7 @@ function TalentManagement({ setShowTalent, setShowBusinessPlan, planningAudioRef
           }`}
         >
           <Rocket className="w-7 h-7" />
-          新規事業創出計画を開始
+          資料プレゼンテーションを開始
         </button>
       </div>
     </div>
