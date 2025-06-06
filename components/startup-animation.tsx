@@ -721,6 +721,22 @@ export function StartupAnimation({ onAnimationComplete }: StartupAnimationProps)
 
   // ロゴクリック時のログイン処理
   const handleLogin = () => {
+    // startsound.mp3を再生
+    const playStartSound = () => {
+      try {
+        const audio = new Audio('/sounds/startsound.mp3');
+        audio.volume = 0.7; // 音量を70%に設定
+        audio.play().catch((error) => {
+          console.log('音声の再生に失敗しました:', error);
+        });
+      } catch (error) {
+        console.log('音声ファイルの読み込みに失敗しました:', error);
+      }
+    };
+
+    // 音声を再生
+    playStartSound();
+    
     // コズミックマップアニメーションを開始
     setShowCosmicAnimation(true);
   };
