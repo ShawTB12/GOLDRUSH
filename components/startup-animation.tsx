@@ -447,7 +447,7 @@ export function StartupAnimation({ onAnimationComplete }: StartupAnimationProps)
     createBusinessNode(canvas.width * 0.4, canvas.height * 0.3, "AI医療診断", [0, 2]);
     createBusinessNode(canvas.width * 0.6, canvas.height * 0.4, "宇宙観光プラットフォーム", [1, 4]);
     createBusinessNode(canvas.width * 0.3, canvas.height * 0.5, "合成生物学", [2, 3]);
-    createBusinessNode(canvas.width * 0.5, canvas.height * 0.6, "カーボンオフセット取引", [3, 4]);
+    createBusinessNode(canvas.width * 0.5, canvas.height * 0.75, "カーボンオフセット取引", [3, 4]);
     createBusinessNode(canvas.width * 0.7, canvas.height * 0.5, "量子コンピューティング", [0, 1]);
     
     // 主要なカメラパラメータ
@@ -723,11 +723,11 @@ export function StartupAnimation({ onAnimationComplete }: StartupAnimationProps)
   const handleLogin = () => {
     // startsound.mp3を再生
     const playStartSound = () => {
-      try {
-        const audio = new Audio('/sounds/startsound.mp3');
-        audio.volume = 0.7; // 音量を70%に設定
-        audio.play().catch((error) => {
-          console.log('音声の再生に失敗しました:', error);
+              try {
+          const audio = new Audio('/sounds/startsound.mp3');
+          audio.volume = 1.0; // 音量を120%に設定
+          audio.play().catch((error) => {
+            console.log('音声の再生に失敗しました:', error);
         });
       } catch (error) {
         console.log('音声ファイルの読み込みに失敗しました:', error);

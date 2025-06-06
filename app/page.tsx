@@ -2377,23 +2377,14 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
 
   if (showLoading) {
     return (
-      <div 
-        className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale"
-        style={{
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95))',
-          backdropFilter: 'blur(25px)',
-          borderRadius: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
-          boxShadow: '0 24px 48px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
-        }}
-      >
+      <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
         <style>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
           }
           .loader {
-            border: 8px solid rgba(255, 255, 255, 0.3);
+            border: 8px solid #f3f3f3;
             border-top: 8px solid #e879f9;
             border-right: 8px solid #818cf8;
             border-radius: 50%;
@@ -2401,13 +2392,12 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
             height: 88px;
             animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
             margin-bottom: 48px;
-            box-shadow: 0 0 32px rgba(232, 121, 249, 0.3), 0 0 16px rgba(129, 140, 248, 0.3);
-            backdrop-filter: blur(5px);
+            box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
           }
         `}</style>
         <div className="loader" />
         <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
-        <div className="text-4xl text-gray-700 font-extrabold tracking-wide drop-shadow-sm">市場分析データから特許を抽出中</div>
+        <div className="text-4xl text-white font-extrabold tracking-wide drop-shadow-lg">市場分析データから特許を抽出中</div>
       </div>
     );
   }
@@ -2421,43 +2411,16 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
     <div
       className={`min-h-[400px] flex flex-col items-center justify-center px-2 py-8 transition-opacity duration-700 ${fadeOut ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       onTransitionEnd={handleTransitionEnd}
-      style={{
-        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(245, 245, 245, 0.9))',
-        backdropFilter: 'blur(20px)',
-        borderRadius: '24px',
-        border: '1px solid rgba(255, 255, 255, 0.3)',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
-      }}
     >
       <div className="w-full max-w-5xl mb-6 flex items-center gap-3">
-        <button 
-          onClick={onBack} 
-          className="rounded-full px-5 py-2 text-gray-700 text-lg font-bold transition-all duration-300 hover:shadow-lg"
-          style={{
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.4)',
-            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)'
-          }}
-        >
-          ← 戻る
-        </button>
+        <button onClick={onBack} className="rounded-full bg-white/70 px-5 py-2 text-gray-700 text-lg font-bold shadow border border-gray-200 hover:bg-gray-100 transition">← 戻る</button>
         <span className="text-2xl font-bold text-gray-800 tracking-wide flex items-center gap-2">
           <span>分析クエリ: <span className="font-mono text-indigo-500">{query}</span></span>
         </span>
       </div>
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {agents.map((agent, idx) => (
-          <div 
-            key={agent.name} 
-            className="rounded-2xl p-6 flex flex-col min-h-[220px] transition-all duration-300 hover:scale-105"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9))',
-              backdropFilter: 'blur(15px)',
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              boxShadow: '0 16px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6)'
-            }}
-          >
+          <div key={agent.name} className="rounded-2xl bg-white/30 backdrop-blur-md shadow p-6 flex flex-col border border-gray-100 min-h-[220px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="font-bold text-lg text-gray-800">{agent.name}</span>
             </div>
@@ -2465,32 +2428,13 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
             <div className="bg-gray-900 text-xs text-white rounded-md p-2 font-mono mb-2 overflow-x-auto min-h-[60px]">
               <pre className="whitespace-pre-wrap">{agent.code}</pre>
             </div>
-            <div 
-              className="w-full h-2 rounded-full overflow-hidden mb-1"
-              style={{
-                background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(240, 240, 240, 0.8))',
-                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)'
-              }}
-            >
-              <div 
-                style={{ 
-                  width: `${progress[idx]}%`, 
-                  background: `linear-gradient(90deg, ${agent.color}, ${agent.color}CC)`,
-                  boxShadow: `0 0 8px ${agent.color}55`
-                }} 
-                className="h-full transition-all duration-200 rounded-full" 
-              />
+            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+              <div style={{ width: `${progress[idx]}%`, background: agent.color }} className="h-full transition-all duration-200" />
             </div>
             <div className="text-right text-xs text-gray-500">{progress[idx]}%</div>
             <div className="text-xs text-gray-400 mt-1 min-h-[2em]">分析中...</div>
             {progress[idx] === 100 && (
-              <div 
-                className="mt-4 text-base text-black font-semibold leading-relaxed min-h-[90px] animate-fadein pt-3"
-                style={{
-                  borderTop: '1px solid rgba(255, 255, 255, 0.5)',
-                  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.8)'
-                }}
-              >
+              <div className="mt-4 text-base text-black font-semibold leading-relaxed min-h-[90px] animate-fadein border-t border-gray-200 pt-3">
                 {typedResults[idx]}
               </div>
             )}
@@ -2785,6 +2729,22 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
 
   // 資料プレゼンテーション開始関数を追加
   const handleStartPresentation = () => {
+    // newbussines.mp3を再生
+    const playNewBusinessSound = () => {
+      try {
+        const audio = new Audio('/sounds/newbussines.mp3');
+        audio.volume = 1.0; // 音量を100%に設定
+        audio.play().catch((error) => {
+          console.log('newbussines.mp3の再生に失敗しました:', error);
+        });
+      } catch (error) {
+        console.log('newbussines.mp3ファイルの読み込みに失敗しました:', error);
+      }
+    };
+
+    // 音声を再生
+    playNewBusinessSound();
+    
     // 選択されたタレント情報を取得
     const selectedInternalTalentData = selectedTalents.internal.map(index => internalTalents[index]);
     const selectedExternalTalentData = selectedTalents.external.map(index => externalTalents[index]);
