@@ -857,13 +857,15 @@ export default function PresentationGrid() {
   };
 
   const handleSurveyClick = () => {
-    // テストマーケティンググリッドを表示
+    // 直接テストマーケティンググリッドを表示
     setShowTestMarketing(true);
   };
 
+
+
   // テストマーケティング画面を表示する場合
   if (showTestMarketing) {
-    return <TestMarketingGrid />;
+    return <TestMarketingGrid onBackToSlides={() => setShowTestMarketing(false)} />;
   }
 
   return (
@@ -896,51 +898,51 @@ export default function PresentationGrid() {
 
       {/* メインコンテナ */}
       <div className="bg-gray-100 p-4">
-        {/* グリッド表示 */}
+      {/* グリッド表示 */}
         <div className={`grid grid-cols-2 gap-4 ${expandedSlideIndex !== null ? 'pointer-events-none opacity-50' : ''}`}>
-          {slides.map((slide, index) => (
+        {slides.map((slide, index) => (
+          <div 
+            key={index} 
+            className={`relative w-full mb-4 overflow-hidden rounded-lg shadow-lg bg-white cursor-pointer transform transition-transform duration-200 ${
+              expandedSlideIndex === null && codeCompleted[index] ? 'hover:scale-105' : ''
+            }`}
+            style={{ aspectRatio: '16/9' }}
+            onClick={() => codeCompleted[index] && handleSlideClick(index)}
+          >
+            {/* コード表示エリア - コード完了後に非表示 */}
             <div 
-              key={index} 
-              className={`relative w-full mb-4 overflow-hidden rounded-lg shadow-lg bg-white cursor-pointer transform transition-transform duration-200 ${
-                expandedSlideIndex === null && codeCompleted[index] ? 'hover:scale-105' : ''
+              className={`absolute top-0 left-0 w-full z-10 bg-gray-900 overflow-hidden transition-all duration-100 ${
+                codeCompleted[index] ? 'h-0 opacity-0' : 'h-full opacity-100'
               }`}
-              style={{ aspectRatio: '16/9' }}
-              onClick={() => codeCompleted[index] && handleSlideClick(index)}
             >
-              {/* コード表示エリア - コード完了後に非表示 */}
-              <div 
-                className={`absolute top-0 left-0 w-full z-10 bg-gray-900 overflow-hidden transition-all duration-100 ${
-                  codeCompleted[index] ? 'h-0 opacity-0' : 'h-full opacity-100'
-                }`}
-              >
-                <pre className="text-xs text-green-400 font-mono p-2 overflow-auto h-full">
-                  {typedTexts[index]}
-                </pre>
-              </div>
-              
-              {/* スライド画像 - コード完了後に全画面表示 */}
-              <div 
-                className={`absolute inset-0 transition-all duration-100 ${
-                  codeCompleted[index] ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <div className="relative w-full h-full">
-                  <Image
-                    src={slide.imagePath}
-                    alt={slide.title}
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                  {codeCompleted[index] && (
-                    <div className="absolute top-2 right-2 bg-white bg-opacity-70 px-2 py-1 rounded text-sm">
-                      {slide.slideNumber}
-                    </div>
-                  )}
-                </div>
+              <pre className="text-xs text-green-400 font-mono p-2 overflow-auto h-full">
+                {typedTexts[index]}
+              </pre>
+            </div>
+            
+            {/* スライド画像 - コード完了後に全画面表示 */}
+            <div 
+              className={`absolute inset-0 transition-all duration-100 ${
+                codeCompleted[index] ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <div className="relative w-full h-full">
+                <Image
+                  src={slide.imagePath}
+                  alt={slide.title}
+                  fill
+                  className="object-contain"
+                  priority
+                />
+                {codeCompleted[index] && (
+                  <div className="absolute top-2 right-2 bg-white bg-opacity-70 px-2 py-1 rounded text-sm">
+                    {slide.slideNumber}
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+          </div>
+        ))}
         </div>
       </div>
 
@@ -965,7 +967,7 @@ export default function PresentationGrid() {
                 d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" 
               />
             </svg>
-            ソフトバンク経済圏でテストマーケティング
+            新規事業 1万本ノック
           </button>
         </div>
 

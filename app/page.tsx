@@ -146,6 +146,7 @@ export default function Home() {
   const [showBusinessPlan, setShowBusinessPlan] = useState(false)
   const [showPresentation, setShowPresentation] = useState(false)
   const [showPatents, setShowPatents] = useState(false)
+  const [showPatentLoading, setShowPatentLoading] = useState(false)
   const [showTalent, setShowTalent] = useState(false)
   const [showTalentLoading, setShowTalentLoading] = useState(false)
   // スタートアップアニメーションのステート
@@ -810,6 +811,29 @@ export default function Home() {
                     }}
                     executionAudioRef={executionAudioRef}
                   />
+                ) : showPatentLoading ? (
+                  <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
+                    <style>{`
+                      @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                      }
+                      .loader {
+                        border: 8px solid #f3f3f3;
+                        border-top: 8px solid #e879f9;
+                        border-right: 8px solid #818cf8;
+                        border-radius: 50%;
+                        width: 88px;
+                        height: 88px;
+                        animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+                        margin-bottom: 48px;
+                        box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
+                      }
+                    `}</style>
+                    <div className="loader" />
+                    <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
+                    <div className="text-4xl text-white font-extrabold tracking-wide drop-shadow-lg">市場分析データから特許を抽出中</div>
+                  </div>
                 ) : showPatents ? (
                   <PatentGallery 
                     setShowPatents={setShowPatents}
@@ -851,7 +875,12 @@ export default function Home() {
                     onBack={() => setShowMarketAgents(false)}
                     onShowPatents={() => {
                       setShowMarketAgents(false);
-                      setShowPatents(true);
+                      setShowPatentLoading(true);
+                      // 4秒後に特許ギャラリーを表示
+                      setTimeout(() => {
+                        setShowPatentLoading(false);
+                        setShowPatents(true);
+                      }, 4000);
                     }}
                   />
                 ) : (
@@ -2332,8 +2361,6 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
   const [progress, setProgress] = useState([0, 0, 0, 0]);
   const [typedResults, setTypedResults] = useState(["", "", "", ""]);
   const [fadeOut, setFadeOut] = useState(false);
-  const [showPatents, setShowPatents] = useState(false);
-  const [showLoading, setShowLoading] = useState(false);
 
   useEffect(() => {
     // progressを100%までアニメーション
@@ -2364,48 +2391,14 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
     }
   }, [typedResults]);
 
-  // フェードアウト後にローディング画面→特許ギャラリー表示
+  // フェードアウト後に特許ギャラリー表示
   const handleTransitionEnd = () => {
-    if (fadeOut && !showLoading && !showPatents) {
-      setShowLoading(true);
-      setTimeout(() => {
-        setShowLoading(false);
-        onShowPatents();
-      }, 4000);
+    if (fadeOut) {
+      onShowPatents();
     }
   };
 
-  if (showLoading) {
-    return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          .loader {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #e879f9;
-            border-right: 8px solid #818cf8;
-            border-radius: 50%;
-            width: 88px;
-            height: 88px;
-            animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-            margin-bottom: 48px;
-            box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
-          }
-        `}</style>
-        <div className="loader" />
-        <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
-        <div className="text-4xl text-white font-extrabold tracking-wide drop-shadow-lg">市場分析データから特許を抽出中</div>
-      </div>
-    );
-  }
 
-  if (showPatents) {
-    onShowPatents();
-    return null;
-  }
 
   return (
     <div
