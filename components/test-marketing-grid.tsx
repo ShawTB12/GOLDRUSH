@@ -430,134 +430,230 @@ export default function TestMarketingGrid({ onBackToSlides }: TestMarketingGridP
 
                 {/* グラフエリア */}
                 <div className="bg-white/5 rounded-2xl p-6 mb-6">
-                  <h3 className="text-xl font-semibold text-white mb-4">F/M比率トレンド分析</h3>
+                  <h3 className="text-xl font-semibold text-white mb-4">Cancer Bridge - 包括的財務分析</h3>
                   
-                  {/* SVGグラフ */}
-                  <div className="relative h-80 bg-gray-900/30 rounded-xl p-4">
-                    <svg className="w-full h-full" viewBox="0 0 800 300">
-                      {/* グリッドライン */}
-                      <defs>
-                        <linearGradient id="graphGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#3B82F6" />
-                          <stop offset="50%" stopColor="#EC4899" />
-                          <stop offset="100%" stopColor="#8B5CF6" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* Y軸グリッド */}
-                      {[0, 1, 2, 3, 4, 5].map(i => (
-                        <g key={i}>
-                          <line 
-                            x1="60" 
-                            y1={50 + i * 40} 
-                            x2="740" 
-                            y2={50 + i * 40} 
-                            stroke="rgba(255,255,255,0.1)" 
-                            strokeWidth="1"
-                          />
-                          <text 
-                            x="50" 
-                            y={55 + i * 40} 
-                            fill="rgba(255,255,255,0.6)" 
-                            fontSize="12" 
-                            textAnchor="end"
-                          >
-                            {5 - i}
-                          </text>
-                        </g>
-                      ))}
-                      
-                      {/* X軸ラベル */}
-                      {['1月', '2月', '3月', '4月', '5月', '6月'].map((month, i) => (
-                        <text 
-                          key={i}
-                          x={80 + i * 110} 
-                          y="280" 
-                          fill="rgba(255,255,255,0.6)" 
-                          fontSize="12" 
-                          textAnchor="middle"
-                        >
-                          {month}
-                        </text>
-                      ))}
-
-                      {/* データライン */}
-                      <path
-                        d={`M 80,${250 - (2.1 * 40)} L ${80 + (graphProgress/100) * 110},${250 - (2.3 * 40)} L ${80 + (graphProgress/100) * 220},${250 - (2.8 * 40)} L ${80 + (graphProgress/100) * 330},${250 - (3.2 * 40)} L ${80 + (graphProgress/100) * 440},${250 - (3.5 * 40)} L ${80 + (graphProgress/100) * 550},${250 - (3.8 * 40)}`}
-                        stroke="url(#graphGradient)"
-                        strokeWidth="3"
-                        fill="none"
-                        strokeLinecap="round"
-                        style={{
-                          strokeDasharray: '1000',
-                          strokeDashoffset: 1000 - (graphProgress / 100) * 1000,
-                          transition: 'stroke-dashoffset 0.1s ease-out'
-                        }}
-                      />
-
-                      {/* データポイント */}
-                      {[
-                        { x: 80, y: 250 - (2.1 * 40), value: 2.1 },
-                        { x: 190, y: 250 - (2.3 * 40), value: 2.3 },
-                        { x: 300, y: 250 - (2.8 * 40), value: 2.8 },
-                        { x: 410, y: 250 - (3.2 * 40), value: 3.2 },
-                        { x: 520, y: 250 - (3.5 * 40), value: 3.5 },
-                        { x: 630, y: 250 - (3.8 * 40), value: 3.8 }
-                      ].map((point, i) => (
-                        graphProgress > (i * 100 / 6) && (
+                  {/* 複合グラフエリア */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    {/* F/M比率トレンド */}
+                    <div className="relative h-64 bg-gray-900/30 rounded-xl p-4">
+                      <h4 className="text-sm text-white/80 mb-2">診断収益効率性 (F/M比率)</h4>
+                      <svg className="w-full h-full" viewBox="0 0 400 200">
+                        <defs>
+                          <linearGradient id="fmGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#3B82F6" />
+                            <stop offset="50%" stopColor="#EC4899" />
+                            <stop offset="100%" stopColor="#8B5CF6" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* Y軸グリッド */}
+                        {[0, 1, 2, 3, 4].map(i => (
                           <g key={i}>
-                            <circle
-                              cx={point.x}
-                              cy={point.y}
-                              r="6"
-                              fill="url(#graphGradient)"
-                              className="animate-pulse"
-                            />
-                            <text
-                              x={point.x}
-                              y={point.y - 15}
-                              fill="white"
-                              fontSize="12"
-                              textAnchor="middle"
-                              fontWeight="bold"
-                            >
-                              {point.value}
+                            <line x1="40" y1={30 + i * 30} x2="360" y2={30 + i * 30} stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
+                            <text x="35" y={35 + i * 30} fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="end">
+                              {4 - i}
                             </text>
                           </g>
-                        )
-                      ))}
-                    </svg>
+                        ))}
+                        
+                        {/* X軸ラベル */}
+                        {['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6'].map((quarter, i) => (
+                          <text key={i} x={60 + i * 50} y="190" fill="rgba(255,255,255,0.6)" fontSize="10" textAnchor="middle">
+                            {quarter}
+                          </text>
+                        ))}
+
+                        {/* F/M比率ライン */}
+                        <path
+                          d={`M 60,${150 - (2.1 * 30)} L ${60 + (graphProgress/100) * 50},${150 - (2.3 * 30)} L ${60 + (graphProgress/100) * 100},${150 - (2.8 * 30)} L ${60 + (graphProgress/100) * 150},${150 - (3.2 * 30)} L ${60 + (graphProgress/100) * 200},${150 - (3.5 * 30)} L ${60 + (graphProgress/100) * 250},${150 - (3.8 * 30)}`}
+                          stroke="url(#fmGradient)"
+                          strokeWidth="2"
+                          fill="none"
+                          strokeLinecap="round"
+                          style={{
+                            strokeDasharray: '500',
+                            strokeDashoffset: 500 - (graphProgress / 100) * 500,
+                            transition: 'stroke-dashoffset 0.1s ease-out'
+                          }}
+                        />
+                      </svg>
+                    </div>
+
+                    {/* コスト構造分析 */}
+                    <div className="relative h-64 bg-gray-900/30 rounded-xl p-4">
+                      <h4 className="text-sm text-white/80 mb-2">医療AI開発コスト構造</h4>
+                      <svg className="w-full h-full" viewBox="0 0 400 200">
+                        <defs>
+                          <linearGradient id="costGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#EF4444" />
+                            <stop offset="100%" stopColor="#DC2626" />
+                          </linearGradient>
+                          <linearGradient id="costGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#F97316" />
+                            <stop offset="100%" stopColor="#EA580C" />
+                          </linearGradient>
+                          <linearGradient id="costGradient3" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#EAB308" />
+                            <stop offset="100%" stopColor="#CA8A04" />
+                          </linearGradient>
+                          <linearGradient id="costGradient4" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="#22C55E" />
+                            <stop offset="100%" stopColor="#16A34A" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* コスト積み上げバー */}
+                        {['人件費', 'データ費', 'インフラ', '規制対応'].map((cost, i) => {
+                          const maxHeight = 120;
+                          const costRatios = [0.4, 0.3, 0.2, 0.1]; // 40%, 30%, 20%, 10%
+                          const currentHeight = maxHeight * costRatios[i] * (graphProgress / 100);
+                          const yPosition = 150 - (i > 0 ? costRatios.slice(0, i).reduce((a, b) => a + b, 0) * maxHeight * (graphProgress / 100) : 0) - currentHeight;
+                          
+                          return (
+                            <g key={i}>
+                              <rect
+                                x="150"
+                                y={yPosition}
+                                width="100"
+                                height={currentHeight}
+                                fill={`url(#costGradient${i + 1})`}
+                                opacity="0.9"
+                              />
+                              {graphProgress > 20 * (i + 1) && (
+                                <text
+                                  x="280"
+                                  y={yPosition + currentHeight / 2 + 3}
+                                  fill="white"
+                                  fontSize="12"
+                                  fontWeight="bold"
+                                >
+                                  {cost}
+                                </text>
+                              )}
+                            </g>
+                          );
+                        })}
+                        
+                        {/* Y軸ラベル */}
+                        <text x="20" y="25" fill="rgba(255,255,255,0.8)" fontSize="10">億円</text>
+                        <text x="20" y="40" fill="rgba(255,255,255,0.6)" fontSize="10">15</text>
+                        <text x="20" y="70" fill="rgba(255,255,255,0.6)" fontSize="10">10</text>
+                        <text x="20" y="100" fill="rgba(255,255,255,0.6)" fontSize="10">5</text>
+                        <text x="20" y="150" fill="rgba(255,255,255,0.6)" fontSize="10">0</text>
+                      </svg>
+                    </div>
                   </div>
 
-                  {/* 分析結果 */}
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    <div className="bg-white/5 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-400">{graphProgress > 50 ? '3.8' : '---'}</div>
-                      <div className="text-sm text-white/60">現在のF/M比率</div>
+                  {/* ROI分析とアノテーション効率 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* ROI分析 */}
+                    <div className="relative h-64 bg-gray-900/30 rounded-xl p-4">
+                      <h4 className="text-sm text-white/80 mb-2">診断精度向上ROI</h4>
+                      <svg className="w-full h-full" viewBox="0 0 400 200">
+                        <defs>
+                          <linearGradient id="roiGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#10B981" />
+                            <stop offset="100%" stopColor="#059669" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* ROI曲線 */}
+                        <path
+                          d={`M 40,160 Q ${40 + (graphProgress/100) * 100},${160 - (graphProgress/100) * 0.8} ${40 + (graphProgress/100) * 320},${40 + (graphProgress/100) * 0.2}`}
+                          stroke="url(#roiGradient)"
+                          strokeWidth="3"
+                          fill="none"
+                          strokeLinecap="round"
+                          style={{
+                            strokeDasharray: '800',
+                            strokeDashoffset: 800 - (graphProgress / 100) * 800,
+                            transition: 'stroke-dashoffset 0.1s ease-out'
+                          }}
+                        />
+                        
+                        {/* ROI値表示 */}
+                        {graphProgress > 80 && (
+                          <text x="320" y="50" fill="#10B981" fontSize="14" fontWeight="bold" textAnchor="end">
+                            +247% ROI
+                          </text>
+                        )}
+                      </svg>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-green-400">{graphProgress > 75 ? '+81%' : '---'}</div>
-                      <div className="text-sm text-white/60">前年同期比</div>
+
+                    {/* アノテーション効率 */}
+                    <div className="relative h-64 bg-gray-900/30 rounded-xl p-4">
+                      <h4 className="text-sm text-white/80 mb-2">データアノテーション効率化</h4>
+                      <svg className="w-full h-full" viewBox="0 0 400 200">
+                        {/* 円グラフ（アノテーション工数削減） */}
+                        {graphProgress > 50 && (
+                          <g>
+                            <circle cx="200" cy="100" r="60" fill="rgba(255,255,255,0.1)" />
+                            <path
+                              d={`M 200,100 L 200,40 A 60,60 0 ${graphProgress > 75 ? 1 : 0},1 ${200 + 60 * Math.sin(2 * Math.PI * 0.7)},${100 - 60 * Math.cos(2 * Math.PI * 0.7)} Z`}
+                              fill="#8B5CF6"
+                              opacity="0.8"
+                            />
+                            <text x="200" y="100" fill="white" fontSize="12" textAnchor="middle" fontWeight="bold">
+                              70%削減
+                            </text>
+                            <text x="200" y="115" fill="white" fontSize="10" textAnchor="middle">
+                              アノテーション工数
+                            </text>
+                          </g>
+                        )}
+                      </svg>
                     </div>
-                    <div className="bg-white/5 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-purple-400">{graphProgress > 90 ? '優良' : '---'}</div>
-                      <div className="text-sm text-white/60">財務評価</div>
+                  </div>
+
+                  {/* がん診断AI特化 分析結果 */}
+                  <div className="mt-4 grid grid-cols-4 gap-3">
+                    <div className="bg-white/5 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold text-blue-400">{graphProgress > 40 ? '3.8' : '---'}</div>
+                      <div className="text-xs text-white/60">診断収益効率<br/>(F/M比率)</div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold text-green-400">{graphProgress > 60 ? '94.7%' : '---'}</div>
+                      <div className="text-xs text-white/60">がん検出精度<br/>(感度)</div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold text-purple-400">{graphProgress > 80 ? '247%' : '---'}</div>
+                      <div className="text-xs text-white/60">診断時間短縮<br/>ROI</div>
+                    </div>
+                    <div className="bg-white/5 rounded-lg p-3 text-center">
+                      <div className="text-xl font-bold text-orange-400">{graphProgress > 90 ? '70%' : '---'}</div>
+                      <div className="text-xs text-white/60">アノテーション<br/>工数削減</div>
                     </div>
                   </div>
                 </div>
 
-                {/* AI分析結果 */}
+                {/* がん診断AI特化 分析結果 */}
                 <div className="bg-white/5 rounded-2xl p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-white font-semibold">財務分析AI による分析結果</span>
+                    <span className="text-white font-semibold">医療AI財務分析エージェント による包括分析</span>
                   </div>
-                  <p className="text-white/80 leading-relaxed">
-                    {graphProgress > 80 
-                      ? "F/M比率が3.8と業界平均(2.2)を大幅に上回り、固定資産の効率的活用が確認されました。継続的な成長基盤が構築されており、投資リスクは低レベルです。"
-                      : "分析中..."
-                    }
-                  </p>
+                  <div className="text-white/80 leading-relaxed space-y-2">
+                    {graphProgress > 30 && (
+                      <p className="text-sm">
+                        🏥 <strong>診断収益効率:</strong> F/M比率3.8により、医療機器投資に対する診断収益が業界平均(2.2)を73%上回る効率性を実現
+                      </p>
+                    )}
+                    {graphProgress > 50 && (
+                      <p className="text-sm">
+                        📊 <strong>コスト構造最適化:</strong> 放射線科医人件費(40%)、医療データ取得(30%)、AI学習インフラ(20%)、薬機法対応(10%)のバランス良い配分
+                      </p>
+                    )}
+                    {graphProgress > 70 && (
+                      <p className="text-sm">
+                        🎯 <strong>診断精度向上:</strong> 感度94.7%達成により誤診リスクを67%削減、医療過誤賠償コスト年間2.3億円の軽減効果
+                      </p>
+                    )}
+                    {graphProgress > 90 && (
+                      <p className="text-sm">
+                        ⚡ <strong>スケールメリット:</strong> アノテーション自動化で人的コスト70%削減、診断1件あたりの限界コストが半減し、収益性の指数的向上が見込まれます
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

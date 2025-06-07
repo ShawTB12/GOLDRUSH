@@ -2413,7 +2413,7 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
       </div>
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {agents.map((agent, idx) => (
-          <div key={agent.name} className="rounded-2xl bg-white/30 backdrop-blur-md shadow p-6 flex flex-col border border-gray-100 min-h-[220px]">
+          <div key={agent.name} className="rounded-2xl bg-white shadow p-6 flex flex-col border border-gray-100 min-h-[220px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="font-bold text-lg text-gray-800">{agent.name}</span>
             </div>
@@ -2793,24 +2793,20 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
                 )}
-                {t.name === "柴山 和久" ? (
-                  <div className="w-20 h-20 rounded-full overflow-hidden mr-4 border-4 border-pink-200 shadow bg-gray-100 flex items-center justify-center relative">
-                    <Image
-                      src="/sato-takeru.jpg"
-                      alt={t.name}
-                      fill
-                      className="object-cover"
-                      priority
-                      sizes="80px"
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center mr-4 border-4 border-pink-200 shadow">
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
                     />
-                  </div>
-                ) : t.img ? (
-                  <img src={t.img} alt={t.name} className="w-20 h-20 rounded-full object-cover mr-4 border-4 border-pink-200 shadow" />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold mr-4 border-4 border-pink-200 shadow">
-                    No Image
-                  </div>
-                )}
+                  </svg>
+                </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-800 mb-1 tracking-tight">{t.name}</div>
                   <div className="text-lg text-pink-500 font-semibold mb-1">{t.dept}</div>
@@ -2853,8 +2849,19 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
                 )}
-                <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold mr-4 border-4 border-blue-200 shadow">
-                  No Image
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mr-4 border-4 border-blue-200 shadow">
+                  <svg
+                    className="w-12 h-12 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-gray-800 mb-1 tracking-tight">{t.name}</div>
@@ -2871,17 +2878,20 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white/90 rounded-3xl p-8 max-w-2xl w-full mx-4 shadow-2xl border-4 border-pink-300/60">
             <div className="flex items-center gap-6 mb-6">
-              {isInternal ? (
-                <img 
-                  src={internalTalents[selectedTalent].img} 
-                  alt={internalTalents[selectedTalent].name} 
-                  className="w-32 h-32 rounded-full object-cover border-4 border-pink-200 shadow"
-                />
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-lg font-bold border-4 border-blue-200 shadow">
-                  No Image
-                </div>
-              )}
+              <div className={`w-32 h-32 rounded-full ${isInternal ? 'bg-gradient-to-br from-gray-400 to-gray-600 border-pink-200' : 'bg-gradient-to-br from-blue-400 to-blue-600 border-blue-200'} flex items-center justify-center border-4 shadow`}>
+                <svg
+                  className="w-20 h-20 text-white"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
               <div>
                 <h3 className="text-4xl font-bold text-gray-800 mb-2">
                   {isInternal ? internalTalents[selectedTalent].name : externalTalents[selectedTalent].name}

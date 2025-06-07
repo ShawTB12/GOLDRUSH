@@ -869,7 +869,7 @@ export default function PresentationGrid() {
   }
 
   return (
-    <div className="w-full min-h-full bg-white text-black overflow-auto">
+    <div className="w-full min-h-full bg-white text-black overflow-auto" style={{ backgroundColor: 'white' }}>
       {/* 拡大表示されたスライド */}
       {expandedSlideIndex !== null && (
         <div 
@@ -897,7 +897,7 @@ export default function PresentationGrid() {
       )}
 
       {/* メインコンテナ */}
-      <div className="bg-gray-100 p-4">
+      <div className="bg-white p-4" style={{ backgroundColor: 'white' }}>
       {/* グリッド表示 */}
         <div className={`grid grid-cols-2 gap-4 ${expandedSlideIndex !== null ? 'pointer-events-none opacity-50' : ''}`}>
         {slides.map((slide, index) => (
