@@ -190,10 +190,10 @@ export default function TestMarketingGrid({ onBackToSlides }: TestMarketingGridP
           animation: slide-in-card 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .gallery-container {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(0, 0, 0, 0.8);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         .verification-title {
           text-align: center;
@@ -254,7 +254,7 @@ export default function TestMarketingGrid({ onBackToSlides }: TestMarketingGridP
           <h1 className="text-4xl font-extrabold tracking-wide drop-shadow-lg bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 bg-clip-text text-transparent" style={{letterSpacing:'0.08em'}}>
             CancerBridge テストマーケティング検証
           </h1>
-          <p className="text-gray-300 text-lg mt-4">
+          <p className="text-gray-100 text-lg mt-4">
             ソフトバンク経済圏での実現可能性を多角的に検証
           </p>
         </div>
@@ -403,11 +403,11 @@ export default function TestMarketingGrid({ onBackToSlides }: TestMarketingGridP
         {/* F/M比率分析拡大表示（presentation-gridと同じパターン） */}
         {expandedCardId === 1 && (
           <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
             onClick={() => setExpandedCardId(null)}
           >
             <div 
-              className="relative w-5/6 h-5/6 max-w-6xl rounded-lg shadow-2xl overflow-hidden bg-white/10 backdrop-blur-lg border border-white/20"
+              className="relative w-5/6 h-5/6 max-w-6xl rounded-lg shadow-2xl overflow-hidden bg-black/80 backdrop-blur-lg border border-white/10"
               onClick={(e) => e.stopPropagation()}
             >
               {/* 拡大されたコンテンツ */}

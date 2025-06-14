@@ -24,7 +24,7 @@ export async function sendMessageToOpenAI(messages: ChatMessage[]): Promise<stri
     // APIキーが設定されていない場合はダミーレスポンスを返す
     if (!process.env.OPENAI_API_KEY) {
       console.log('Using dummy response because OPENAI_API_KEY is not set');
-      return 'APIキーが設定されていないため、AIアシスタントは応答できません。環境変数にOPENAI_API_KEYを設定してください。';
+      return '';
     }
 
     // OpenAI APIに送信するためのメッセージフォーマットに変換

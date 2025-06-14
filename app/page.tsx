@@ -773,34 +773,38 @@ export default function Home() {
               }}
             />
 
-            {/* Chat container - すりガラス効果を強化 */}
-            <div className="relative z-10 flex h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-2xl bg-black/40 backdrop-blur-md border border-gray-800/20 shadow-lg">
-              {/* Chat header */}
-              <div className="flex items-center justify-between border-b border-gray-700/20 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black overflow-hidden">
-                    <Image
-                      src="/logo.jpg"
-                      alt="GOLD RUSH AGENT"
-                      width={40}
-                      height={40}
-                      className="block"
-                    />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-gray-200">GOLD RUSH AGENT</h2>
-                    <p className="text-xs text-gray-400">オンライン</p>
+            {/* スライドプレゼンテーション表示時はフルスクリーンモード */}
+            {showPresentation ? (
+              <div className="relative z-10 h-[calc(100vh-24px)] w-full overflow-hidden">
+                <PresentationGrid />
+              </div>
+            ) : (
+              /* 通常のチャットインターフェース */
+              <div className="relative z-10 flex h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-2xl bg-black/40 backdrop-blur-md border border-gray-800/20 shadow-lg">
+                {/* Chat header */}
+                <div className="flex items-center justify-between border-b border-gray-700/20 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black overflow-hidden">
+                      <Image
+                        src="/logo.jpg"
+                        alt="GOLD RUSH AGENT"
+                        width={40}
+                        height={40}
+                        className="block"
+                      />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-gray-200">GOLD RUSH AGENT</h2>
+                      <p className="text-xs text-gray-400">オンライン</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Chat messages */}
-              <div className="flex-1 overflow-y-auto p-4 relative">
-                {showBusinessLoading ? (
-                  <BusinessLoadingAnimation />
-                ) : showPresentation ? (
-                  <PresentationGrid />
-                ) : showBusinessPlan ? (
+                {/* Chat messages */}
+                <div className="flex-1 overflow-y-auto p-4 relative">
+                  {showBusinessLoading ? (
+                    <BusinessLoadingAnimation />
+                  ) : showBusinessPlan ? (
                   <BusinessVenturePlan 
                     onStart={() => {
                       setShowBusinessPlan(false);
@@ -812,7 +816,7 @@ export default function Home() {
                     executionAudioRef={executionAudioRef}
                   />
                 ) : showPatentLoading ? (
-                  <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
+                  <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-fadein-scale">
                     <style>{`
                       @keyframes spin {
                         0% { transform: rotate(0deg); }
@@ -831,8 +835,8 @@ export default function Home() {
                       }
                     `}</style>
                     <div className="loader" />
-                    <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
-                    <div className="text-4xl text-white font-extrabold tracking-wide drop-shadow-lg">市場分析データから特許を抽出中</div>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
+                    <div className="text-xl sm:text-2xl lg:text-4xl text-white font-extrabold tracking-wide drop-shadow-lg text-center px-4">市場分析データから特許を抽出中</div>
                   </div>
                 ) : showPatents ? (
                   <PatentGallery 
@@ -842,7 +846,7 @@ export default function Home() {
                     setShowPresentation={setShowPresentation}
                   />
                 ) : showTalentLoading ? (
-                  <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
+                  <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-fadein-scale">
                     <style>{`
                       @keyframes spin {
                         0% { transform: rotate(0deg); }
@@ -861,7 +865,7 @@ export default function Home() {
                       }
                     `}</style>
                     <div className="loader" />
-                    <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
                   </div>
                 ) : showTalent ? (
                   <TalentManagement 
@@ -962,96 +966,97 @@ export default function Home() {
                     </div>
                   </>
                 )}
-              </div>
+                </div>
 
-              {/* Chat input - すりガラス効果を強化 */}
-              <div className="border-t border-gray-700/20 bg-black/40 p-4 backdrop-blur-md">
-                <div className="flex items-center rounded-full bg-gray-800/50 px-4 py-2 backdrop-blur-sm border border-gray-700/20 shadow-inner">
-                  <button 
-                    onClick={(e) => handleFileClick(e)}
-                    className="mr-2 text-gray-400 hover:text-gray-200"
-                  >
-                    <Paperclip className="h-5 w-5" />
-                  </button>
-                  {/* 隠しファイル入力フィールド */}
-                  <input 
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.txt,.zip,.rar,.xls,.xlsx,.ppt,.pptx"
-                  />
-                  <textarea
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="メッセージを入力..."
-                    className="mr-2 flex-1 resize-none bg-transparent outline-none placeholder:text-gray-500 text-gray-200"
-                    rows={1}
-                    disabled={isLoading || isRecording}
-                  />
-                  <div className="flex gap-2">
+                {/* Chat input - すりガラス効果を強化 */}
+                <div className="border-t border-gray-700/20 bg-black/40 p-4 backdrop-blur-md">
+                  <div className="flex items-center rounded-full bg-gray-800/50 px-4 py-2 backdrop-blur-sm border border-gray-700/20 shadow-inner">
                     <button 
-                      onClick={(e) => handleImageClick(e)}
-                      className="text-gray-500 hover:text-gray-800"
-                      disabled={isRecording}
+                      onClick={(e) => handleFileClick(e)}
+                      className="mr-2 text-gray-400 hover:text-gray-200"
                     >
-                      <ImageIcon className="h-5 w-5" />
+                      <Paperclip className="h-5 w-5" />
                     </button>
-                    {/* 隠し画像入力フィールド */}
+                    {/* 隠しファイル入力フィールド */}
                     <input 
                       type="file"
-                      ref={imageInputRef}
-                      onChange={handleImageChange}
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
                       className="hidden"
-                      accept="image/*"
+                      accept=".pdf,.doc,.docx,.txt,.zip,.rar,.xls,.xlsx,.ppt,.pptx"
                     />
-                    <button 
-                      onClick={toggleRecording}
-                      className={`relative rounded-full p-2 transition-colors ${
-                        isRecording 
-                          ? "bg-red-500/80 text-white hover:bg-red-600/90 border border-red-400/20" 
-                          : "text-gray-500 hover:text-gray-800 hover:bg-gray-200/40"
-                      }`}
-                    >
-                      <Mic className="h-5 w-5" />
-                      {isRecording && (
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }}
-                      className={`rounded-full ${
-                        isLoading 
-                          ? "bg-blue-500/50 cursor-not-allowed" 
-                          : "bg-blue-500/80 hover:bg-blue-600/90"
-                      } p-2 text-white border border-blue-400/20 shadow-md`}
+                    <textarea
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="メッセージを入力..."
+                      className="mr-2 flex-1 resize-none bg-transparent outline-none placeholder:text-gray-500 text-gray-200"
+                      rows={1}
                       disabled={isLoading || isRecording}
-                    >
-                      {isLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {isRecording && (
-                  <div className="mt-2 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-red-100/70 px-3 py-1 text-xs text-red-800 border border-red-300/20">
-                      <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                      <span>音声を認識中... マイクボタンをクリックして終了</span>
+                    />
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => handleImageClick(e)}
+                        className="text-gray-500 hover:text-gray-800"
+                        disabled={isRecording}
+                      >
+                        <ImageIcon className="h-5 w-5" />
+                      </button>
+                      {/* 隠し画像入力フィールド */}
+                      <input 
+                        type="file"
+                        ref={imageInputRef}
+                        onChange={handleImageChange}
+                        className="hidden"
+                        accept="image/*"
+                      />
+                      <button 
+                        onClick={toggleRecording}
+                        className={`relative rounded-full p-2 transition-colors ${
+                          isRecording 
+                            ? "bg-red-500/80 text-white hover:bg-red-600/90 border border-red-400/20" 
+                            : "text-gray-500 hover:text-gray-800 hover:bg-gray-200/40"
+                        }`}
+                      >
+                        <Mic className="h-5 w-5" />
+                        {isRecording && (
+                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }}
+                        className={`rounded-full ${
+                          isLoading 
+                            ? "bg-blue-500/50 cursor-not-allowed" 
+                            : "bg-blue-500/80 hover:bg-blue-600/90"
+                        } p-2 text-white border border-blue-400/20 shadow-md`}
+                        disabled={isLoading || isRecording}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
-                )}
+                  {isRecording && (
+                    <div className="mt-2 text-center">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-red-100/70 px-3 py-1 text-xs text-red-800 border border-red-300/20">
+                        <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span>音声を認識中... マイクボタンをクリックして終了</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           {/* モバイル用オーバーレイ */}
@@ -2413,7 +2418,7 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
       </div>
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {agents.map((agent, idx) => (
-          <div key={agent.name} className="rounded-2xl bg-white shadow p-6 flex flex-col border border-gray-100 min-h-[220px]">
+          <div key={agent.name} className="rounded-2xl bg-white/60 backdrop-blur-md shadow p-6 flex flex-col border border-gray-100 min-h-[220px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="font-bold text-lg text-gray-800">{agent.name}</span>
             </div>
@@ -2537,7 +2542,7 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
 
   if (showTalentLoading) {
     return (
-      <div className="min-h-[400px] flex flex-col items-center justify-center px-2 py-8 animate-fadein-scale">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-fadein-scale">
         <style>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -2556,7 +2561,7 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
           }
         `}</style>
         <div className="loader" />
-        <div className="text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
+        <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
       </div>
     );
   }
@@ -2745,6 +2750,20 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
     // グローバル状態を更新し、PresentationGridコンポーネントを表示
     setShowTalent(false);
     setShowPresentation(true);
+    
+    // スライド画面表示時にページトップへ即座にスクロール（複数回実行して確実にする）
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    
+    // 即座に実行
+    scrollToTop();
+    
+    // React の状態更新後に再度実行
+    setTimeout(scrollToTop, 50);
+    setTimeout(scrollToTop, 200);
     
     // 選択されたタレント情報をどこかに保存する必要がある場合はここで
     // 例: sessionStorage.setItem('selectedTalents', JSON.stringify({internal: selectedInternalTalentData, external: selectedExternalTalentData}));
@@ -2936,7 +2955,7 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
           }`}
         >
           <Rocket className="w-7 h-7" />
-          資料プレゼンテーションを開始
+          新規事業計画書を作成
         </button>
       </div>
     </div>

@@ -809,8 +809,22 @@ export default function PresentationGrid() {
       startTypingAnimation(index);
     });
 
+    // スライド画面表示時にページトップへ即座にスクロール（複数回実行して確実にする）
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    
+    // 即座に実行
+    scrollToTop();
+    
+    // 少し待ってから再度実行（レンダリング完了後）
+    const timeoutId = setTimeout(scrollToTop, 100);
+    
     return () => {
       timers.current.forEach(clearTimeout);
+      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -869,7 +883,7 @@ export default function PresentationGrid() {
   }
 
   return (
-    <div className="w-full min-h-full bg-white text-black overflow-auto" style={{ backgroundColor: 'white' }}>
+    <div className="w-full h-full bg-white text-black overflow-auto" style={{ backgroundColor: 'white', minHeight: '100vh' }}>
       {/* 拡大表示されたスライド */}
       {expandedSlideIndex !== null && (
         <div 
