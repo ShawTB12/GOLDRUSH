@@ -252,10 +252,10 @@ export default function TestMarketingGrid({ onBackToSlides }: TestMarketingGridP
         {/* ヘッダー */}
         <div className="verification-title">
           <h1 className="text-4xl font-extrabold tracking-wide drop-shadow-lg bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 bg-clip-text text-transparent" style={{letterSpacing:'0.08em'}}>
-            CancerBridge テストマーケティング検証
+            孫の二乗モデルで挑む新規事業創造
           </h1>
-          <p className="text-gray-100 text-lg mt-4">
-            ソフトバンク経済圏での実現可能性を多角的に検証
+          <p className="text-gray-100 text-2xl mt-4 font-semibold">
+            1万のエージェントが、<span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 bg-clip-text text-transparent font-bold text-3xl">事業成功率70%以上</span>の発明かどうかを検証
           </p>
         </div>
 

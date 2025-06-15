@@ -2767,14 +2767,14 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-start px-2 py-12 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-10">
-      <h2 className="text-4xl font-extrabold mb-12 tracking-wide drop-shadow-lg bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 bg-clip-text text-transparent text-center" style={{letterSpacing:'0.08em'}}>タレントマネジメント</h2>
+    <div className="h-full flex flex-col items-center justify-start px-2 py-12 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-10 bg-black/40 backdrop-blur-md border border-gray-800/20">
+      <h2 className="text-4xl font-extrabold mb-12 tracking-wide drop-shadow-2xl bg-gradient-to-r from-blue-400 via-pink-400 to-purple-400 bg-clip-text text-transparent text-center shadow-white/50" style={{letterSpacing:'0.08em'}}>新規事業に必要な人材をスカウト</h2>
       <div className="flex flex-row w-full gap-12 items-stretch">
         {/* 社内セクション */}
         <div className="flex-1 flex flex-col relative">
           <div className="relative mb-8 flex justify-center">
-            <h3 className="text-4xl font-bold text-gray-800 text-center relative inline-block">
-              社内
+            <h3 className="text-3xl font-bold text-gray-200 text-center relative inline-block drop-shadow-lg">
+              SBグループ内の人材
               <span className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"></span>
             </h3>
           </div>
@@ -2829,8 +2829,8 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
         {/* 社外セクション */}
         <div className="flex-1 flex flex-col relative">
           <div className="relative mb-8 flex justify-center">
-            <h3 className="text-4xl font-bold text-gray-800 text-center relative inline-block">
-              社外
+            <h3 className="text-3xl font-bold text-gray-200 text-center relative inline-block drop-shadow-lg">
+              外部のエキスパート人材
               <span className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></span>
             </h3>
           </div>
