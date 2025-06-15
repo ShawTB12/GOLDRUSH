@@ -690,6 +690,36 @@ export default function Home() {
       
       {isLoggedIn && !showStartupAnimation && (
         <div className="flex h-screen w-full overflow-hidden bg-background">
+          {/* タレントローディング画面 - メインコンテンツエリアのみを覆う */}
+          {showTalentLoading && (
+            <div 
+              className="fixed top-0 bottom-0 right-0 z-[70] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-fadein-scale"
+              style={{ 
+                left: `${!isMobile && !isSidebarCollapsed ? sidebarWidth : 0}px`
+              }}
+            >
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+                .loader {
+                  border: 8px solid #f3f3f3;
+                  border-top: 8px solid #e879f9;
+                  border-right: 8px solid #818cf8;
+                  border-radius: 50%;
+                  width: 88px;
+                  height: 88px;
+                  animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+                  margin-bottom: 48px;
+                  box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
+                }
+              `}</style>
+              <div className="loader" />
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
+            </div>
+          )}
+          
           {/* モバイル用サイドバートグル */}
           {isMobile && (
             <button
@@ -778,6 +808,25 @@ export default function Home() {
               <div className="relative z-10 h-[calc(100vh-24px)] w-full overflow-hidden">
                 <PresentationGrid />
               </div>
+            ) : showPatents ? (
+              /* 特許ギャラリー表示時はフルスクリーンモード */
+              <div className="relative z-10 h-[calc(100vh-24px)] w-full overflow-hidden">
+                <PatentGallery 
+                  setShowPatents={setShowPatents}
+                  setShowTalentLoading={setShowTalentLoading}
+                  setShowTalent={setShowTalent}
+                  setShowPresentation={setShowPresentation}
+                />
+              </div>
+            ) : showTalent ? (
+              /* タレントマネジメント表示時は専用エリア（サイドバーと並列） */
+              <div className="relative z-10 w-full min-h-[calc(100vh-24px)] overflow-y-auto">
+                <TalentManagement 
+                  setShowTalent={setShowTalent} 
+                  setShowPresentation={setShowPresentation} 
+                  planningAudioRef={planningAudioRef} 
+                />
+              </div>
             ) : (
               /* 通常のチャットインターフェース */
               <div className="relative z-10 flex h-[calc(100vh-24px)] w-full flex-col overflow-hidden rounded-2xl bg-black/40 backdrop-blur-md border border-gray-800/20 shadow-lg">
@@ -838,41 +887,6 @@ export default function Home() {
                     <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>ローディング中</div>
                     <div className="text-xl sm:text-2xl lg:text-4xl text-white font-extrabold tracking-wide drop-shadow-lg text-center px-4">市場分析データから特許を抽出中</div>
                   </div>
-                ) : showPatents ? (
-                  <PatentGallery 
-                    setShowPatents={setShowPatents}
-                    setShowTalentLoading={setShowTalentLoading}
-                    setShowTalent={setShowTalent}
-                    setShowPresentation={setShowPresentation}
-                  />
-                ) : showTalentLoading ? (
-                  <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-fadein-scale">
-                    <style>{`
-                      @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                      }
-                      .loader {
-                        border: 8px solid #f3f3f3;
-                        border-top: 8px solid #e879f9;
-                        border-right: 8px solid #818cf8;
-                        border-radius: 50%;
-                        width: 88px;
-                        height: 88px;
-                        animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-                        margin-bottom: 48px;
-                        box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
-                      }
-                    `}</style>
-                    <div className="loader" />
-                    <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
-                  </div>
-                ) : showTalent ? (
-                  <TalentManagement 
-                    setShowTalent={setShowTalent} 
-                    setShowPresentation={setShowPresentation} 
-                    planningAudioRef={planningAudioRef} 
-                  />
                 ) : showMarketAgents ? (
                   <MarketAgentsUI 
                     query={marketQuery} 
@@ -2418,21 +2432,21 @@ function MarketAgentsUI({ query, onBack, onShowPatents }: { query: string, onBac
       </div>
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
         {agents.map((agent, idx) => (
-          <div key={agent.name} className="rounded-2xl bg-white/60 backdrop-blur-md shadow p-6 flex flex-col border border-gray-100 min-h-[220px]">
+          <div key={agent.name} className="rounded-2xl bg-black/80 backdrop-blur-md shadow-lg p-6 flex flex-col border border-gray-600/30 min-h-[220px]">
             <div className="flex items-center gap-2 mb-2">
-              <span className="font-bold text-lg text-gray-800">{agent.name}</span>
+              <span className="font-bold text-lg text-white">{agent.name}</span>
             </div>
-            <div className="text-gray-600 text-sm mb-2">{agent.label}</div>
+            <div className="text-gray-300 text-sm mb-2">{agent.label}</div>
             <div className="bg-gray-900 text-xs text-white rounded-md p-2 font-mono mb-2 overflow-x-auto min-h-[60px]">
               <pre className="whitespace-pre-wrap">{agent.code}</pre>
             </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-1">
+            <div className="w-full h-2 bg-gray-600 rounded-full overflow-hidden mb-1">
               <div style={{ width: `${progress[idx]}%`, background: agent.color }} className="h-full transition-all duration-200" />
             </div>
-            <div className="text-right text-xs text-gray-500">{progress[idx]}%</div>
+            <div className="text-right text-xs text-gray-300">{progress[idx]}%</div>
             <div className="text-xs text-gray-400 mt-1 min-h-[2em]">分析中...</div>
             {progress[idx] === 100 && (
-              <div className="mt-4 text-base text-black font-semibold leading-relaxed min-h-[90px] animate-fadein border-t border-gray-200 pt-3">
+              <div className="mt-4 text-base text-white font-semibold leading-relaxed min-h-[90px] animate-fadein border-t border-gray-600/40 pt-3">
                 {typedResults[idx]}
               </div>
             )}
@@ -2501,8 +2515,7 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
     }
   ];
   const [currentIndex, setCurrentIndex] = useState(1); // 最初は真ん中
-  const [showTalentLoading, setLocalShowTalentLoading] = useState(false);
-  const [showTalent, setLocalShowTalent] = useState(false);
+  const [showLocalTalent, setShowLocalTalent] = useState(false);
   
   // 音声参照を作成
   const dummyAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -2527,11 +2540,12 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
         });
     }
     
-    // タレントマネジメント画面に遷移する前にローディングを表示
-    setLocalShowTalentLoading(true);
+    // 最上位レベルのタレントローディングを表示
+    setShowTalentLoading(true);
     setTimeout(() => {
-      setLocalShowTalentLoading(false);
-      setLocalShowTalent(true);
+      setShowTalentLoading(false);
+      setShowTalent(true);
+      setShowLocalTalent(true); // ローカル状態も更新
     }, 4000);
   };
 
@@ -2540,35 +2554,12 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
     setCurrentIndex(targetIndex);
   };
 
-  if (showTalentLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-fadein-scale">
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          .loader {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #e879f9;
-            border-right: 8px solid #818cf8;
-            border-radius: 50%;
-            width: 88px;
-            height: 88px;
-            animation: spin 1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-            margin-bottom: 48px;
-            box-shadow: 0 0 48px #f472b6, 0 0 16px #818cf8;
-          }
-        `}</style>
-        <div className="loader" />
-        <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-800 tracking-wide bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 bg-clip-text text-transparent mb-4 text-center px-4" style={{letterSpacing:'0.08em'}}>タレントマネジメント実行中</div>
-      </div>
-    );
-  }
-
-  if (showTalent) {
+  if (showLocalTalent) {
     return <TalentManagement 
-      setShowTalent={setLocalShowTalent} 
+      setShowTalent={(show) => {
+        setShowLocalTalent(show);
+        setShowTalent(show);
+      }} 
       setShowPresentation={setShowPresentation} 
       planningAudioRef={dummyAudioRef} 
     />;
@@ -2628,10 +2619,10 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
           border-top: 2px solid rgba(0,0,0,0.1);
         }
         .gallery-container {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(0, 0, 0, 0.6);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         .patent-title {
           text-align: center;
@@ -2650,11 +2641,11 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
           border-radius: 3px;
         }
       `}</style>
-      <div className="min-h-[600px] flex flex-col items-center justify-center px-2 py-12 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-10">
-        <h2 className="text-4xl font-extrabold mb-12 tracking-wide drop-shadow-lg bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 bg-clip-text text-transparent text-center" style={{letterSpacing:'0.08em'}}>AI×医療 特許ギャラリー</h2>
+      <div className="min-h-[400px] flex flex-col items-center justify-start px-2 py-8 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-8">
+        <h2 className="text-4xl font-extrabold mb-8 tracking-wide drop-shadow-lg bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 bg-clip-text text-transparent text-center" style={{letterSpacing:'0.08em'}}>新規事業に活用する特許の選択</h2>
         
         {/* 特許カードのコンテナ */}
-        <div className="relative flex items-center justify-center w-full gap-8 mb-8">
+        <div className="relative flex items-center justify-center w-full gap-8 mb-8 mt-6">
           {/* 特許カード */}
           <div className="flex items-center justify-center gap-8">
             {[-1, 0, 1].map((offset) => {
@@ -2666,7 +2657,7 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
                   onClick={() => handlePatentClick(index)}
                   className={`patent-card flex flex-col bg-white/90 rounded-3xl shadow-2xl border-4 ${
                     offset === 0 ? 'border-pink-300/60 active' : 'border-gray-300/60 inactive'
-                  } p-6 w-[400px] min-h-[600px]`}
+                  } p-6 w-[400px] min-h-[360px]`}
                 >
                   <div className="patent-title">
                     <div className="text-2xl font-bold text-gray-800 tracking-tight">{patent.title}</div>
@@ -2692,7 +2683,7 @@ function PatentGallery({ setShowPatents, setShowTalentLoading, setShowTalent, se
         </div>
 
         {/* 選択ボタン */}
-        <div className="w-full flex justify-center mt-8">
+        <div className="w-full flex justify-center mt-2">
           <button
             onClick={handleSelectPatent}
             className="px-8 py-3 rounded-full bg-gradient-to-r from-pink-400 via-pink-500 to-purple-500 text-white text-xl font-bold shadow-lg border-2 border-pink-200 hover:scale-105 hover:from-pink-500 hover:to-purple-600 transition-all duration-200"
@@ -2776,7 +2767,7 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
   };
 
   return (
-    <div className="min-h-[600px] flex flex-col items-center justify-center px-2 py-12 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-10">
+    <div className="h-full flex flex-col items-center justify-start px-2 py-12 animate-fadein-scale gallery-container rounded-3xl shadow-2xl p-10">
       <h2 className="text-4xl font-extrabold mb-12 tracking-wide drop-shadow-lg bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 bg-clip-text text-transparent text-center" style={{letterSpacing:'0.08em'}}>タレントマネジメント</h2>
       <div className="flex flex-row w-full gap-12 items-stretch">
         {/* 社内セクション */}
@@ -2787,7 +2778,7 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
               <span className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full"></span>
             </h3>
           </div>
-          <div className="flex flex-col gap-8 h-full backdrop-blur-sm bg-white/30 rounded-3xl p-8 border border-white/20">
+          <div className="flex flex-col gap-8 backdrop-blur-sm bg-white/30 rounded-3xl p-8 border border-white/20 max-h-[450px] overflow-y-auto">
             {internalTalents.map((t, i) => (
               <div 
                 key={i} 
@@ -2803,16 +2794,16 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
                     return {...prev, internal: newInternal};
                   });
                 }}
-                className={`talent-card flex flex-row items-center bg-white/90 rounded-3xl shadow-2xl border-4 ${
+                className={`talent-card flex flex-row items-start bg-white/90 rounded-3xl shadow-2xl border-4 ${
                   selectedTalents.internal.includes(i) ? 'border-pink-400 shadow-lg scale-[1.02]' : 'border-pink-300/60'
-                } p-6 min-h-[160px] h-full max-w-full hover:scale-[1.02] transition-all duration-300 cursor-pointer relative`}
+                } p-8 w-full hover:scale-[1.02] transition-all duration-300 cursor-pointer relative overflow-hidden`}
               >
                 {selectedTalents.internal.includes(i) && (
-                  <div className="absolute -top-2 -right-2 bg-pink-500 rounded-full p-1 shadow-lg animate-bounce">
+                  <div className="absolute top-4 right-4 bg-pink-500 rounded-full p-2 shadow-lg animate-bounce z-10 flex-shrink-0">
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
                 )}
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center mr-4 border-4 border-pink-200 shadow">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center mr-6 border-4 border-pink-200 shadow flex-shrink-0">
                   <svg
                     className="w-12 h-12 text-white"
                     fill="currentColor"
@@ -2826,10 +2817,10 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
                     />
                   </svg>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800 mb-1 tracking-tight">{t.name}</div>
-                  <div className="text-lg text-pink-500 font-semibold mb-1">{t.dept}</div>
-                  <div className="text-gray-700 text-base whitespace-pre-line">{t.desc}</div>
+                <div className="flex-1 min-w-0 pr-16 py-1">
+                  <div className="text-xl font-bold text-gray-800 mb-2 tracking-tight break-words word-wrap overflow-wrap-anywhere">{t.name}</div>
+                  <div className="text-base text-pink-500 font-semibold mb-2 break-words word-wrap overflow-wrap-anywhere">{t.dept}</div>
+                  <div className="text-gray-700 text-sm leading-relaxed break-words word-wrap overflow-wrap-anywhere">{t.desc}</div>
                 </div>
               </div>
             ))}
@@ -2843,7 +2834,7 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
               <span className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"></span>
             </h3>
           </div>
-          <div className="flex flex-col gap-8 h-full backdrop-blur-sm bg-white/30 rounded-3xl p-8 border border-white/20">
+          <div className="flex flex-col gap-8 backdrop-blur-sm bg-white/30 rounded-3xl p-8 border border-white/20 max-h-[450px] overflow-y-auto">
             {externalTalents.map((t, i) => (
               <div 
                 key={i} 
@@ -2859,16 +2850,16 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
                     return {...prev, external: newExternal};
                   });
                 }}
-                className={`talent-card flex flex-row items-center bg-white/90 rounded-3xl shadow-2xl border-4 ${
+                className={`talent-card flex flex-row items-start bg-white/90 rounded-3xl shadow-2xl border-4 ${
                   selectedTalents.external.includes(i) ? 'border-blue-400 shadow-lg scale-[1.02]' : 'border-blue-300/60'
-                } p-6 min-h-[160px] max-w-full hover:scale-[1.02] transition-all duration-300 cursor-pointer relative`}
+                } p-8 w-full hover:scale-[1.02] transition-all duration-300 cursor-pointer relative overflow-hidden`}
               >
                 {selectedTalents.external.includes(i) && (
-                  <div className="absolute -top-2 -right-2 bg-blue-500 rounded-full p-1 shadow-lg animate-bounce">
+                  <div className="absolute top-4 right-4 bg-blue-500 rounded-full p-2 shadow-lg animate-bounce z-10 flex-shrink-0">
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
                 )}
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mr-4 border-4 border-blue-200 shadow">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mr-6 border-4 border-blue-200 shadow flex-shrink-0">
                   <svg
                     className="w-12 h-12 text-white"
                     fill="currentColor"
@@ -2882,10 +2873,10 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
                     />
                   </svg>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-gray-800 mb-1 tracking-tight">{t.name}</div>
-                  <div className="text-lg text-blue-500 font-semibold mb-1">{t.dept}</div>
-                  <div className="text-gray-700 text-base whitespace-pre-line">{t.desc}</div>
+                <div className="flex-1 min-w-0 pr-16 py-1">
+                  <div className="text-xl font-bold text-gray-800 mb-2 tracking-tight break-words word-wrap overflow-wrap-anywhere">{t.name}</div>
+                  <div className="text-base text-blue-500 font-semibold mb-2 break-words word-wrap overflow-wrap-anywhere">{t.dept}</div>
+                  <div className="text-gray-700 text-sm leading-relaxed break-words word-wrap overflow-wrap-anywhere">{t.desc}</div>
                 </div>
               </div>
             ))}
@@ -2934,12 +2925,19 @@ function TalentManagement({ setShowTalent, setShowPresentation, planningAudioRef
           </div>
         </div>
       )}
-      {/* 枠の高さを揃えるためのスタイル */}
+      {/* カードスタイルの調整 */}
       <style jsx>{`
         .talent-card {
-          min-height: 160px;
-          height: 100%;
+          min-height: 180px;
           display: flex;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+        .talent-card div {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
       `}</style>
       
